@@ -46,6 +46,17 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// タスク取得失敗時などにエラーメッセージを表示する関数
+function showErrorMessage(message) {
+    const container = document.getElementById('taskListContainer');
+    if (!container) return;
+
+    container.innerHTML = `<div class="empty-state">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>${escapeHtml(message)}</p>
+    </div>`;
+}
+
 // 初期化
 // ページのHTMLが全部読み込まれたら、setupEventListeners() を実行する
 document.addEventListener("DOMContentLoaded", () => {
