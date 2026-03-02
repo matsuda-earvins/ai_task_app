@@ -561,44 +561,48 @@ function getPriorityClass(priority) {
 // JSON API方式でフィルタリングしたタスクを取得して表示する
 async function filterTasks(filter) {
     try {
+        // 1. APIからデータ取得
         const response = await fetch(`/api/tasks?filter=${filter}`);
 
         // HTTP的に成功か確認
         console.log('status:', response.status);
-
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // APIレスポンスをJSON形式に変換
         const data = await response.json();
         console.log('data:', data); // APIレスポンス全体を確認
         console.log('tasks:', data.tasks); // tasksのみを確認
 
-        renderTaskList(data.tasks, filter);
+        // 2. DB形式 → フロント表示形式に変換
+        const transformedTasks = data.tasks.map(transformTaskData);
+
+        // 3. タスク表示エリアを取得
+        const container = document.getElementById('taskListContainer');
+
+        if (transformedTasks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>タスクがありません</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 4. renderTaskItem()を使用し、タスク一覧を描画
+        // completedフィルター時のみ完了表示モードにする
+        const isCompleted = filter === 'completed';
+        container.innerHTML = transformedTasks
+            .map(task => renderTaskItem(task, isCompleted))
+            .join('');
+
     } catch (error) {
+        // エラー処理
         console.error('タスクの取得に失敗しました:', error);
         showErrorMessage('タスクの読み込みに失敗しました');
     }
-}
-
-function renderTaskList(tasks, filter) {
-    const container = document.getElementById('taskListContainer');
-
-    if (tasks.length === 0) {
-        container.innerHTML = '<div class="empty-state">タスクがありません</div>';
-        return;
-    }
-
-    container.innerHTML = tasks.map(task => `
-        <div class="task-item" onclick="editTask(${task.id})">
-            <div class="task-title">${task.ai_task}</div>
-            <div class="task-meta">
-                <span>${task.assignee?.name || '未割当'}</span>
-                <span>${task.priority?.name || '指定なし'}</span>
-                <span>${task.due_date || '期限なし'}</span>
-            </div>
-        </div>
-    `).join('');
 }
 
 
