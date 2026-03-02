@@ -11,29 +11,29 @@ use App\Models\Priority;
 
 class TaskController extends Controller
 {
-    // JSON API方式でタスク一覧を取得
-    public function apiIndex(Request $request)
+    // タスク一覧を取得(共通化メソッド)
+    private function getFilteredTasks(User $currentUser, string $filter)
     {
-        // 固定ユーザー（松田さん）を取得
-        $currentUser = User::where('email', 'matsuda@example.com')->first();
-
-        $filter = $request->query('filter', 'self');
-
+        // タスク取得用のクエリビルダを作成
         $query = Task::with(['assignee', 'priority', 'createdBy'])
             ->orderBy('created_at', 'desc');
 
+        // filter の値に応じて検索条件を追加
         switch ($filter) {
+            // 自分が担当しているタスク
             case 'self':
                 $query->where('assignee_id', $currentUser->id)
                     ->whereNull('completed_at');
                 break;
 
+            // 他メンバーが担当しているタスク
             case 'member':
                 $query->where('assignee_id', '!=', $currentUser->id)
                     ->whereNotNull('assignee_id')
                     ->whereNull('completed_at');
                 break;
 
+            // 担当者が未割当のタスク
             case 'unassigned':
                 $query->where(function ($q) {
                     $q->whereNull('assignee_id')
@@ -42,14 +42,28 @@ class TaskController extends Controller
                 })->whereNull('completed_at');
                 break;
 
+            // 完了済みのタスク
             case 'completed':
                 $query->whereNotNull('completed_at');
                 break;
         }
 
-        $tasks = $query->get();
+        // SQLを実行し、条件に合うタスク一覧を取得して返す
+        return $query->get();
+    }
 
-        // JSONレスポンスを返す
+
+    // JSON API方式でタスク一覧を返すAPI用メソッド
+    public function apiIndex(Request $request)
+    {
+        // 仮のログインユーザーを取得
+        $currentUser = User::where('email', 'matsuda@example.com')->first();
+        // URLの ?filter=xxx を取得（未指定なら 'self'）
+        $filter = $request->query('filter', 'self');
+        // 共通化したロジックでタスクを取得
+        $tasks = $this->getFilteredTasks($currentUser, $filter);
+
+        // JSONレスポンスを返す（画面ではなくデータ）
         return response()->json([
             'tasks' => $tasks,
             'filter' => $filter,
@@ -57,56 +71,18 @@ class TaskController extends Controller
         ]);
     }
 
-    // タスク表示
+
+    // Blade（HTML）でタスク一覧を表示するメソッド
     public function index(Request $request)
     {
-        // ログインユーザー（現時点では固定ユーザー）を取得
         $currentUser = User::where('email', 'matsuda@example.com')->first();
-
-        // URLのクエリパラメータ 'filter' を取得する。もし存在しなければ 'self' を使う
         $filter = $request->query('filter', 'self');
+        $tasks = $this->getFilteredTasks($currentUser, $filter);
 
-        // with()はリレーションを事前に読み込むことでN+1問題を防ぐ
-        // orderBy()は作成日時の降順で並び替える
-        $query = Task::with(['assignee', 'priority', 'createdBy'])->orderBy('created_at', 'desc');
-
-        switch ($filter) {
-            case 'self':
-                // 自分担当のタスク（未完了）
-                // WHERE assignee_id = 1 AND completed_at IS NULL
-                $query->where('assignee_id', $currentUser->id)
-                    ->whereNull('completed_at');
-                break;
-
-            case 'member':
-                // 他メンバー担当のタスク（未完了）
-                $query->where('assignee_id', '!=', $currentUser->id)
-                    ->whereNotNull('assignee_id')
-                    ->whereNull('completed_at');
-                break;
-
-            case 'unassigned':
-                // 未割当タスク（担当者なし、優先度なし、期限ないしのいずれか）
-                // OR条件を1つのグループにするためクロージャ(無名関数)を使用
-                $query->where(function ($q) {
-                    $q->whereNull('assignee_id')
-                        ->orWhereNull('priority_id')
-                        ->orWhereNull('due_date');
-                })->whereNull('completed_at');
-                break;
-
-            case 'completed':
-                // 完了済みタスク
-                $query->whereNotNull('completed_at');
-                break;
-        }
-
-        // get()で DB からデータを取得する
-        $tasks = $query->get();
-
-        // compact()で変数を連想配列に変換してviewにわたす
-        return view('tasks.index', compact('tasks', 'currentUser', 'filter'));
+        // Bladeテンプレートにデータを渡してHTMLを生成
+        return view('tasks.index', compact('tasks', 'filter', 'currentUser'));
     }
+
 
     public function settings()
     {
