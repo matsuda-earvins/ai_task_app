@@ -512,36 +512,6 @@ function executeCompleteTask() {
     loadTasks();
 }
 
-// タスク一覧を読み込み
-function loadTasks() {
-    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-    const container = document.getElementById("taskListContainer");
-
-    if (!container) return;
-
-    if (tasks.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-clipboard-list"></i>
-                <p>タスクがありません</p>
-            </div>
-        `;
-        return;
-    }
-
-    // 自分のタスクのみ表示（デフォルトフィルター）
-    const filteredTasks = tasks.filter(
-        (t) =>
-            !t.completed &&
-            (t.assignee === CURRENT_USER ||
-                t.assignee === "あなた" ||
-                t.assignee === "松田" ||
-                t.assignee === "指定なし")
-    );
-
-    renderTaskList(filteredTasks, container, false);
-}
-
 // タスク編集
 function editTask(taskId) {
     const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
