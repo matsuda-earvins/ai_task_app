@@ -11,6 +11,52 @@ use App\Models\Priority;
 
 class TaskController extends Controller
 {
+    // JSON API方式でタスク一覧を取得
+    public function apiIndex(Request $request)
+    {
+        // 固定ユーザー（松田さん）を取得
+        $currentUser = User::where('email', 'matsuda@example.com')->first();
+
+        $filter = $request->query('filter', 'self');
+
+        $query = Task::with(['assignee', 'priority', 'createdBy'])
+            ->orderBy('created_at', 'desc');
+
+        switch ($filter) {
+            case 'self':
+                $query->where('assignee_id', $currentUser->id)
+                    ->whereNull('completed_at');
+                break;
+
+            case 'member':
+                $query->where('assignee_id', '!=', $currentUser->id)
+                    ->whereNotNull('assignee_id')
+                    ->whereNull('completed_at');
+                break;
+
+            case 'unassigned':
+                $query->where(function ($q) {
+                    $q->whereNull('assignee_id')
+                        ->orWhereNull('priority_id')
+                        ->orWhereNull('due_date');
+                })->whereNull('completed_at');
+                break;
+
+            case 'completed':
+                $query->whereNotNull('completed_at');
+                break;
+        }
+
+        $tasks = $query->get();
+
+        // JSONレスポンスを返す
+        return response()->json([
+            'tasks' => $tasks,
+            'filter' => $filter,
+            'currentUser' => $currentUser
+        ]);
+    }
+
     // タスク表示
     public function index(Request $request)
     {
