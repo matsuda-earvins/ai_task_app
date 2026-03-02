@@ -38,8 +38,7 @@
                     <div class="task-item" onclick="editTask({{ $task->id }})">
                         <div class="task-item-top">
                             {{-- 優先度があればclass="priority-優先度名" を追加（例: priority-high） --}}
-                            <div
-                                class="task-checkbox {{ $task->priority ? 'priority-' . strtolower($task->priority->name) : '' }}">
+                            <div class="task-checkbox priority-{{ $task->priority->code ?? 'none' }}">
                             </div>
                             {{-- タスクのタイトル（ai_taskカラム）を表示 --}}
                             <div class="task-title">
@@ -73,8 +72,7 @@
 
                             {{-- 優先度表示エリア --}}
                             {{-- 優先度に応じたCSSクラスを追加 --}}
-                            <div
-                                class="task-meta-item {{ $task->priority ? 'priority-' . strtolower($task->priority->name) : '' }}">
+                            <div class="task-meta-item priority-{{ $task->priority->code ?? 'none' }}">
                                 <i class="fas fa-flag"></i>
                                 {{-- 優先度名があれば表示なければ「指定なし」 --}}
                                 <span>
