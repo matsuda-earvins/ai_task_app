@@ -25,6 +25,18 @@ let currentMonth = new Date().getMonth();
 // アラート用の変数
 let alertCallback = null;
 
+// データベースの日付形式 (YYYY-MM-DD HH:MM:SS) を 年月日 に変換する関数
+function formatDate(dateString) {
+    if (!dateString) return "指定なし";
+
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    return `${year}年${month}月${day}日`;
+}
+
 // 初期化
 // ページのHTMLが全部読み込まれたら、setupEventListeners() を実行する
 document.addEventListener("DOMContentLoaded", () => {
