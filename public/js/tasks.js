@@ -13,6 +13,7 @@ const MEMBERS = [
     { id: 8, name: "松田" },
 ];
 
+// {}ではなく、nullを初期値にすることで、タスクが存在しないことを明示的に表現する
 // 現在編集中のタスク
 let currentTask = null;
 let selectedMember = null;
@@ -191,12 +192,20 @@ function setupEventListeners() {
         deleteTaskBtn.addEventListener("click", deleteTask);
     }
 
-    // フィルタータブ
+    //--------------------------------------------------------------------------------
+    // フィルタータブをクリックしたときの処理
+    //--------------------------------------------------------------------------------
+
+    // .filter-tab というクラス名を持つ要素をすべて取得
     document.querySelectorAll(".filter-tab").forEach((tab) => {
         tab.addEventListener("click", (e) => {
+            // 全部のタブから active クラスを削除
             document.querySelectorAll(".filter-tab").forEach((t) => t.classList.remove("active"));
+            // e.target はクリックした要素 → クリックしたタブに active クラスを追加
             e.target.classList.add("active");
+            // e.target.dataset.filter はクリックしたタブの data-filter 属性の値
             const filter = e.target.dataset.filter;
+            // filterTasks 関数を呼び出し、フィルターを適用
             filterTasks(filter);
         });
     });
@@ -369,7 +378,7 @@ async function saveTask() {
         // CSRFトークンを取得
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-        // LaravelのAPIエンドポイントを呼び出し
+        // APIエンドポイントを呼び出し
         const response = await fetch('/api/tasks/analyze', {
             method: 'POST',
             headers: {
@@ -392,14 +401,14 @@ async function saveTask() {
         // AI解析結果を取得
         const parsedTask = result.data;
 
-        // 現在のタスクを更新
+        // AI解析結果を currentTask オブジェクトに反映
         currentTask.rawInput = taskTitle;
         currentTask.task = parsedTask.task || taskTitle;
         currentTask.date = parsedTask.date || "指定なし";
         currentTask.assignee = parsedTask.assignee || "指定なし";
         currentTask.priority = parsedTask.priority || "指定なし";
 
-        // 手動選択があればそれで上書き
+        // 手動選択があれば上書き（解析結果よりユーザーの手動選択を優先）
         const manualDate = document.getElementById("detailDate").textContent;
         if (manualDate && manualDate !== "指定なし") {
             currentTask.date = manualDate;
@@ -416,18 +425,31 @@ async function saveTask() {
             currentTask.priority = manualPriority;
         }
 
-        // localStorageに保存
-        const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-        const existingIndex = tasks.findIndex((t) => t.id === currentTask.id);
+        // APIを呼び出し、タスクをDBに保存
+        const saveResponse = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+            },
+            // JavaScriptのオブジェクトをJSON文字列に変換
+            body: JSON.stringify({
+                id: currentTask.id,
+                task: currentTask.task,
+                raw_input: currentTask.rawInput,
+                date: currentTask.date,
+                assignee: currentTask.assignee,
+                priority: currentTask.priority
+            })
+        });
 
-        if (existingIndex >= 0) {
-            tasks[existingIndex] = currentTask;
-        } else {
-            tasks.push(currentTask);
+        const saveResult = await saveResponse.json();
+
+        if(!saveResult.success) {
+            alert('保存に失敗しました:' + (saveResult.message || ''));
+            return;
         }
-
-        localStorage.setItem("tasks", JSON.stringify(tasks));
-
         closeModal("taskDetailModal");
     } catch (error) {
         alert("エラー: " + error.message);
@@ -500,14 +522,14 @@ function executeCompleteTask() {
     currentTask.completedAt = new Date().toISOString();
     currentTask.completedBy = CURRENT_USER;
 
-    // localStorageを更新
-    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-    const taskIndex = tasks.findIndex((t) => t.id === currentTask.id);
+    // // localStorageを更新
+    // const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    // const taskIndex = tasks.findIndex((t) => t.id === currentTask.id);
 
-    if (taskIndex >= 0) {
-        tasks[taskIndex] = currentTask;
-        localStorage.setItem("tasks", JSON.stringify(tasks));
-    }
+    // if (taskIndex >= 0) {
+    //     tasks[taskIndex] = currentTask;
+    //     localStorage.setItem("tasks", JSON.stringify(tasks));
+    // }
 
     closeModal("taskDetailModal");
 }
