@@ -17,6 +17,9 @@ const MEMBERS = [
 let currentTask = null;
 let selectedMember = null;
 
+// 現在表示中のタスクリスト
+let currentTaskList = [];
+
 // 日付選択用の変数
 let selectedDate = null;
 let currentYear = new Date().getFullYear();
@@ -123,7 +126,7 @@ function setupEventListeners() {
     // タスク送信
     const submitTask = document.getElementById("submitTask");
     if (submitTask) {
-        submitTask.addEventListener("click", saveTaskWithoutAI);
+        submitTask.addEventListener("click", saveTask);
     }
 
     // 担当者フィールドクリック
@@ -426,7 +429,6 @@ async function saveTask() {
         localStorage.setItem("tasks", JSON.stringify(tasks));
 
         closeModal("taskDetailModal");
-        loadTasks();
     } catch (error) {
         alert("エラー: " + error.message);
     } finally {
@@ -467,7 +469,6 @@ function executeDeleteTask() {
     localStorage.setItem("tasks", JSON.stringify(filteredTasks));
 
     closeModal("taskDetailModal");
-    loadTasks();
 }
 
 // タスク完了
@@ -509,13 +510,11 @@ function executeCompleteTask() {
     }
 
     closeModal("taskDetailModal");
-    loadTasks();
 }
 
 // タスク編集
 function editTask(taskId) {
-    const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-    const task = tasks.find((t) => t.id === taskId);
+    const task = currentTaskList.find((t) => t.id === taskId);
     if (task) {
         showTaskDetail(task);
     }
@@ -547,6 +546,9 @@ async function filterTasks(filter) {
 
         // 2. DB形式 → フロント表示形式に変換
         const transformedTasks = data.tasks.map(transformTaskData);
+
+        // グローバル変数に保存 (editTask()で使用）
+        currentTaskList = transformedTasks;
 
         // 3. タスク表示エリアを取得
         const container = document.getElementById('taskListContainer');
