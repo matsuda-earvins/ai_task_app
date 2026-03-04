@@ -45,14 +45,14 @@ function formatDate(dateString) {
 // ユーザー入力などの文字列を textContent にセットすることで
 // <script> 等のタグをHTMLエンティティに変換し、安全に innerHTML へ挿入できるようにする
 function escapeHtml(text) {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
 }
 
 // タスク取得失敗時などにエラーメッセージを表示する関数
 function showErrorMessage(message) {
-    const container = document.getElementById('taskListContainer');
+    const container = document.getElementById("taskListContainer");
     if (!container) return;
 
     container.innerHTML = `<div class="empty-state">
@@ -65,17 +65,17 @@ function showErrorMessage(message) {
 function transformTaskData(dbTask) {
     return {
         id: dbTask.id,
-        task: dbTask.ai_task,
+        aiTask: dbTask.ai_task,
         textInput: dbTask.text_input,
         date: formatDate(dbTask.due_date),
-        assignee: dbTask.assignee?.name || '指定なし',
-        priority: dbTask.priority?.name || '指定なし',
-        priorityCode: dbTask.priority?.code || 'none',
-        completed: dbTask.completed_at !== null,
+        assignee: dbTask.assignee?.name || "指定なし",
+        priority: dbTask.priority?.name || "指定なし",
+        priorityCode: dbTask.priority?.code || "none",
+        completedFlg: dbTask.completed_flg === true,
         completedAt: dbTask.completed_at,
         completedBy: dbTask.completed_by?.name,
         createdBy: dbTask.created_by?.name,
-        createdAt: dbTask.created_at
+        createdAt: dbTask.created_at,
     };
 }
 
@@ -103,7 +103,9 @@ function setupEventListeners() {
         });
     }
 
-    const closeTaskDetailModal = document.getElementById("closeTaskDetailModal");
+    const closeTaskDetailModal = document.getElementById(
+        "closeTaskDetailModal",
+    );
     if (closeTaskDetailModal) {
         closeTaskDetailModal.addEventListener("click", () => {
             closeModal("taskDetailModal");
@@ -200,7 +202,9 @@ function setupEventListeners() {
     document.querySelectorAll(".filter-tab").forEach((tab) => {
         tab.addEventListener("click", (e) => {
             // 全部のタブから active クラスを削除
-            document.querySelectorAll(".filter-tab").forEach((t) => t.classList.remove("active"));
+            document
+                .querySelectorAll(".filter-tab")
+                .forEach((t) => t.classList.remove("active"));
             // e.target はクリックした要素 → クリックしたタブに active クラスを追加
             e.target.classList.add("active");
             // e.target.dataset.filter はクリックしたタブの data-filter 属性の値
@@ -288,7 +292,13 @@ function closeModal(modalId) {
 }
 
 // アラート表示
-function showAlert(title, message, confirmText, callback, iconClass = "fas fa-user") {
+function showAlert(
+    title,
+    message,
+    confirmText,
+    callback,
+    iconClass = "fas fa-user",
+) {
     document.getElementById("alertTitle").textContent = title;
     document.getElementById("alertMessage").innerHTML = message;
     document.getElementById("alertConfirmBtn").textContent = confirmText;
@@ -311,20 +321,22 @@ function isOtherMemberTask(task) {
 // 新規タスクモーダルを開く
 function openNewTaskModal() {
     currentTask = {
-        id: Date.now(),
+        // idは持たない（サーバー側で生成される）
         textInput: "",
-        task: "",
+        aiTask: "",
         date: "指定なし",
         assignee: CURRENT_USER,
         priority: "指定なし",
         createdBy: CURRENT_USER,
         createdAt: new Date().toISOString(),
-        completed: false,
+        completedFlg: false,
+        completedAt: null,
+        completedBy: null,
     };
 
     document.getElementById("textInputField").value = "";
     document.getElementById("detailDate").textContent = "指定なし";
-    document.getElementById("detailAssignee").textContent = "あなた";
+    document.getElementById("detailAssignee").textContent = "あなた"; // ★★★　currentUserの名前を表示する?
 
     // 優先度ボタンをリセット
     document.querySelectorAll(".priority-btn").forEach((btn) => {
@@ -337,7 +349,7 @@ function openNewTaskModal() {
 // タスク詳細を表示
 function showTaskDetail(task) {
     currentTask = task;
-    document.getElementById("textInputField").value = task.task;
+    document.getElementById("textInputField").value = task.aiTask;
     document.getElementById("detailDate").textContent = task.date;
     document.getElementById("detailAssignee").textContent =
         task.assignee === CURRENT_USER ||
@@ -376,36 +388,38 @@ async function saveTask() {
 
     try {
         // CSRFトークンを取得
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content");
 
         // AI解析APIを呼び出し
-        const response = await fetch('/api/tasks/analyze', {
-            method: 'POST',
+        const response = await fetch("/api/tasks/analyze", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+                Accept: "application/json",
             },
             body: JSON.stringify({
-                text_input: textInput
-            })
+                text_input: textInput,
+            }),
         });
 
         const result = await response.json();
-        console.log('result:', result);
+        console.log("result:", result);
 
         if (!result.success) {
-            alert('エラー: ' + (result.message || 'AI解析に失敗しました'));
+            alert("エラー: " + (result.message || "AI解析に失敗しました"));
             return;
         }
 
         // AI解析結果を取得
         const parsedTask = result.data;
-        console.log('parsedTask:', parsedTask);
+        console.log("parsedTask:", parsedTask);
 
         // AI解析結果を currentTask オブジェクトに反映
         currentTask.textInput = textInput;
-        currentTask.task = parsedTask.task || textInput;
+        currentTask.aiTask = parsedTask.aiTask || textInput;
         currentTask.date = parsedTask.date || "指定なし";
         currentTask.assignee = parsedTask.assignee || "指定なし";
         currentTask.priority = parsedTask.priority || "指定なし";
@@ -416,43 +430,56 @@ async function saveTask() {
             currentTask.date = manualDate;
         }
 
-        const manualAssignee = document.getElementById("detailAssignee").textContent;
+        const manualAssignee =
+            document.getElementById("detailAssignee").textContent;
         if (manualAssignee && manualAssignee !== "あなた") {
             currentTask.assignee = manualAssignee;
         }
 
         // 優先度の手動選択チェック
-        const manualPriority = document.querySelector(".priority-btn.active")?.dataset.priority;
+        const manualPriority = document.querySelector(".priority-btn.active")
+            ?.dataset.priority;
         if (manualPriority) {
             currentTask.priority = manualPriority;
         }
 
-        // APIを呼び出し、タスクをDBに保存
-        const saveResponse = await fetch('/api/tasks', {
-            method: 'POST',
+        // ボディデータを作成(新規作成時はidを含まない)
+        const bodyData = {
+            ai_task: currentTask.aiTask,
+            text_input: currentTask.textInput,
+            date: currentTask.date,
+            assignee: currentTask.assignee,
+            priority: currentTask.priority,
+        };
+
+        // 編集モードならidも追加
+        if (currentTask.id) {
+            bodyData.id = currentTask.id;
+        }
+
+        // DB保存API呼び出し
+        const saveResponse = await fetch("/api/tasks", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+                Accept: "application/json",
             },
-            // JavaScriptのオブジェクトをJSON文字列に変換
-            body: JSON.stringify({
-                id: currentTask.id,
-                task: currentTask.task,
-                text_input: currentTask.textInput,
-                date: currentTask.date,
-                assignee: currentTask.assignee,
-                priority: currentTask.priority
-            })
+            body: JSON.stringify(bodyData),
         });
 
         const saveResult = await saveResponse.json();
 
-        if(!saveResult.success) {
-            alert('保存に失敗しました:' + (saveResult.message || ''));
+        if (!saveResult.success) {
+            alert("保存に失敗しました:" + (saveResult.message || ""));
             return;
         }
+
+        // モーダルを閉じる
         closeModal("taskDetailModal");
+
+        // ★★★タスクリストを再取得して表示
+        // filterTasks('現在のフィルター'); →transformTaskData()でDB形式を変換
     } catch (error) {
         alert("エラー: " + error.message);
     } finally {
@@ -473,7 +500,7 @@ function deleteTask() {
             `このタスクは<strong>${assigneeName}</strong>さんに割り当てられています。削除してもよろしいですか?`,
             "削除する",
             () => executeDeleteTask(),
-            "fas fa-trash"
+            "fas fa-trash",
         );
         return;
     }
@@ -507,7 +534,7 @@ function completeTask() {
             `このタスクは<strong>${assigneeName}</strong>さんに割り当てられています。完了にしてもよろしいですか?`,
             "完了にする",
             () => executeCompleteTask(),
-            "fas fa-user"
+            "fas fa-user",
         );
         return;
     }
@@ -520,18 +547,9 @@ function executeCompleteTask() {
     if (!currentTask) return;
 
     // 完了情報を追加
-    currentTask.completed = true;
+    currentTask.completedFlg = true;
     currentTask.completedAt = new Date().toISOString();
     currentTask.completedBy = CURRENT_USER;
-
-    // // localStorageを更新
-    // const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-    // const taskIndex = tasks.findIndex((t) => t.id === currentTask.id);
-
-    // if (taskIndex >= 0) {
-    //     tasks[taskIndex] = currentTask;
-    //     localStorage.setItem("tasks", JSON.stringify(tasks));
-    // }
 
     closeModal("taskDetailModal");
 }
@@ -558,15 +576,12 @@ async function filterTasks(filter) {
         const response = await fetch(`/api/tasks?filter=${filter}`);
 
         // HTTP的に成功か確認
-        console.log('status:', response.status);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         // APIレスポンスをJSON形式に変換
         const data = await response.json();
-        console.log('data:', data); // APIレスポンス全体を確認
-        console.log('tasks:', data.tasks); // tasksのみを確認
 
         // 2. DB形式 → フロント表示形式に変換
         const transformedTasks = data.tasks.map(transformTaskData);
@@ -575,7 +590,7 @@ async function filterTasks(filter) {
         currentTaskList = transformedTasks;
 
         // 3. タスク表示エリアを取得
-        const container = document.getElementById('taskListContainer');
+        const container = document.getElementById("taskListContainer");
 
         if (transformedTasks.length === 0) {
             container.innerHTML = `
@@ -589,18 +604,16 @@ async function filterTasks(filter) {
 
         // 4. renderTaskItem()を使用し、タスク一覧を描画
         // completedフィルター時のみ完了表示モードにする
-        const isCompleted = filter === 'completed';
+        const isCompleted = filter === "completed";
         container.innerHTML = transformedTasks
-            .map(task => renderTaskItem(task, isCompleted))
-            .join('');
-
+            .map((task) => renderTaskItem(task, isCompleted))
+            .join("");
     } catch (error) {
         // エラー処理
-        console.error('タスクの取得に失敗しました:', error);
-        showErrorMessage('タスクの読み込みに失敗しました');
+        console.error("タスクの取得に失敗しました:", error);
+        showErrorMessage("タスクの読み込みに失敗しました");
     }
 }
-
 
 // タスクアイテムのHTML生成
 function renderTaskItem(task, isCompleted = false) {
@@ -612,7 +625,7 @@ function renderTaskItem(task, isCompleted = false) {
             ${isCompleted ? renderCompletedInfo(task, checkboxContent, getPriorityClass(task.priority)) : ""}
             <div class="task-item-top">
                 ${!isCompleted ? `<div class="task-checkbox ${getPriorityClass(task.priority)}">${checkboxContent}</div>` : ""}
-                <div class="task-title">${task.task}</div>
+                <div class="task-title">${task.aiTask}</div>
             </div>
             <div class="task-meta">
                 <div class="task-meta-item">
@@ -642,7 +655,8 @@ function renderCompletedInfo(task, checkboxContent, priorityClass) {
         minute: "2-digit",
     });
 
-    const completedByName = task.completedBy === CURRENT_USER ? "あなた" : task.completedBy;
+    const completedByName =
+        task.completedBy === CURRENT_USER ? "あなた" : task.completedBy;
 
     return `
         <div class="completed-info">
@@ -666,7 +680,9 @@ function renderUnassignedTasks(tasks, container) {
     }
 
     const noAssignee = tasks.filter((t) => t.assignee === "指定なし");
-    const noPriority = tasks.filter((t) => t.priority === "指定なし" && t.assignee !== "指定なし");
+    const noPriority = tasks.filter(
+        (t) => t.priority === "指定なし" && t.assignee !== "指定なし",
+    );
 
     let html = "";
 
@@ -755,7 +771,9 @@ function groupTasksByCompletedDate(tasks) {
     });
 
     Object.keys(groups).forEach((key) => {
-        groups[key].sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+        groups[key].sort(
+            (a, b) => new Date(b.completedAt) - new Date(a.completedAt),
+        );
     });
 
     return groups;
@@ -796,7 +814,7 @@ function renderMemberList() {
                     ${selectedMember === member.id ? '<i class="fas fa-check"></i>' : ""}
                 </div>
             </div>
-        `
+        `,
     ).join("");
 }
 
@@ -838,7 +856,20 @@ function renderCalendar() {
     const lastDate = lastDay.getDate();
     const prevLastDate = prevLastDay.getDate();
 
-    const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+    const monthNames = [
+        "1月",
+        "2月",
+        "3月",
+        "4月",
+        "5月",
+        "6月",
+        "7月",
+        "8月",
+        "9月",
+        "10月",
+        "11月",
+        "12月",
+    ];
     const currentMonthEl = document.getElementById("currentMonth");
     if (currentMonthEl) {
         currentMonthEl.textContent = `${currentYear}年 ${monthNames[currentMonth]}`;
@@ -889,7 +920,8 @@ function createDayCell(day, date, isOtherMonth) {
     date.setHours(0, 0, 0, 0);
 
     const isToday = date.getTime() === today.getTime();
-    const isSelected = selectedDate && date.getTime() === selectedDate.getTime();
+    const isSelected =
+        selectedDate && date.getTime() === selectedDate.getTime();
     const dayOfWeek = date.getDay();
 
     let classes = ["calendar-day"];
