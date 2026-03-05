@@ -92,10 +92,12 @@ class TaskController extends Controller
     // POST /api/tasks/analyze タスクをAI解析するメソッド
     public function analyzeTask(Request $request)
     {
+        // 入力バリデーション
         $request->validate([
             'text_input' => 'required|string|max:500',
         ]);
 
+        // 入力テキストを取得
         $textInput = $request->input('text_input');
 
         // 今日の日付情報を取得
@@ -105,49 +107,52 @@ class TaskController extends Controller
         $todayString = $today->format('Y年n月j日') . "（{$weekday}）";
 
         // OpenAI APIに送信するプロンプト
-        $systemPrompt = "あなたはタスク管理の専門家です。
-        以下の入力テキストから、タスク管理に必要な情報を抽出してください。
+        $systemPrompt = "
+            あなたはタスク管理の専門家です。
+            以下の入力テキストから、タスク管理に必要な情報を抽出してください。
 
-        【前提】
-        - この入力はログインユーザー本人が行っています
-        - 推測や補完は行わず、明示されている情報のみを使用してください
-        - 判断できない項目は「指定なし」としてください
+            【前提】
+            - この入力はログインユーザー本人が行っています
+            - 推測や補完は行わず、明示されている情報のみを使用してください
+            - 判断できない項目は「指定なし」としてください
 
-        【抽出項目】
+            【抽出項目】
 
-        1. 入力内容
-        - 入力されたテキストをそのまま出力してください
+            1. 入力内容
+            - 入力されたテキストをそのまま出力してください
 
-        2. タスク
-        - 入力文の中から「やることの内容」を簡潔に抽出してください
+            2. タスク
+            - 入力文の中から「やることの内容」を簡潔に抽出してください
 
-        3. 日付
-        - 期限や実施日が明示されている場合のみ抽出してください
-        - 緊急度の表現が含まれている場合は日付を「今日」としてください
-        - これらの表現と日付が明示されている場合は、日付を優先してください
-        - 今日は {$todayString} です
-        - 週の定義：月曜日が週の始まり、金曜日が週の終わりです
-        - 「今週中」「来週中」はその週の金曜日を期限としてください
+            3. 日付
+            - 期限や実施日が明示されている場合のみ抽出してください
+            - 緊急度の表現が含まれている場合は日付を「今日」としてください
+            - これらの表現と日付が明示されている場合は、日付を優先してください
+            - 今日は {$todayString} です
+            - 週の定義：月曜日が週の始まり、金曜日が週の終わりです
+            - 「今週中」「来週中」はその週の金曜日を期限としてください
 
-        4. 担当者
-        - 以下の候補から選んでください
-        - ASSIGNEE_LIST = [松本, 野中, 白石, 松波, 宮原, 安岡, 阪本, 松田]
-        - 人名が明示されていない場合、または「自分」「私」「俺」などの表現は「あなた」としてください
+            4. 担当者
+            - 以下の候補から選んでください
+            - ASSIGNEE_LIST = [松本, 野中, 白石, 松波, 宮原, 安岡, 阪本, 松田]
+            - 人名が明示されていない場合、または「自分」「私」「俺」などの表現は「あなた」としてください
 
-        5. 優先度
-        - 高・中・低 のいずれかで出力してください
-        - 判断できない場合は「指定なし」としてください
-        - 「なるはや」「至急」「急ぎ」などは優先度「高」としてください
+            5. 優先度
+            - 高・中・低 のいずれかで出力してください
+            - 判断できない場合は「指定なし」としてください
+            - 「なるはや」「至急」「急ぎ」などは優先度「高」としてください
 
-        【出力形式】
-        以下のJSON形式で出力してください:
-        {
-        \"aiTask\": \"タスク名\",
-        \"date\": \"yyyy年mm月dd日 または 指定なし\",
-        \"assignee\": \"担当者名 または 指定なし\",
-        \"priority\": \"高 または 中 または 低 または 指定なし\"
-        }";
+            【出力形式】
+            以下のJSON形式で出力してください:
+            {
+            \"aiTask\": \"タスク名\",
+            \"date\": \"yyyy年mm月dd日 または 指定なし\",
+            \"assignee\": \"担当者名 または 指定なし\",
+            \"priority\": \"高 または 中 または 低 または 指定なし\"
+            }
+        ";
 
+        // 処理
         try {
             // OpenAI APIを呼び出し
             $response = Http::withHeaders([
@@ -207,13 +212,14 @@ class TaskController extends Controller
             // 入力テキストを解析結果に追加
             $parsedTask['textInput'] = $textInput;
 
-            // AI解析結果をJSONでフロントエンドに返す
+
+            // 成功時：AI解析結果をJSONでフロントエンドに返す
             return response()->json([
                 'success' => true,
                 'data' => $parsedTask,
             ]);
         } catch (\Exception $e) {
-            // エラーが発生した場合はエラーを返す
+            // エラー時：エラーが発生した場合はエラーを返す
             return response()->json([
                 'success' => false,
                 'message' => 'エラーが発生しました: ' . $e->getMessage(),
@@ -222,7 +228,112 @@ class TaskController extends Controller
     }
 
     // POST /api/tasks タスクを保存するメソッド
-    public function store(Request $request) {}
+    public function store(Request $request)
+    {
+
+        // 1. 入力バリデーション
+        $validated = $request->validate([
+            'id' => 'nullable|integer', // 編集時のみ存在
+            'ai_task' => 'required|string|max:500',
+            'text_input' => 'required|string|max:500',
+            'date' => 'nullable|string',        // "2026年3月1日"または"指定なし"
+            'assignee' => 'nullable|string', // "松田"または"指定なし"
+            'priority' => 'nullable|string', // "高"または"指定なし"
+        ]);
+
+        try {
+            // ★★★ 2. ログインユーザーを取得（created_by_idに使用)
+            $currentUser = User::where('email', 'matsuda@example.com')->first();
+
+            // 3. データ変換 (日付, 担当者, 優先度)
+            $dueDate = $this->convertDateStringToDate($validated['date'] ?? null);
+            $assigneeId = $this->findUserIdByName($validated['assignee'] ?? null);
+            $priorityId = $this->findPriorityIdByName($validated['priority'] ?? null);
+
+            // 4. DB保存(新規作成 or 編集)
+            if ($request->filled('id')) {
+                //既存のタスクを更新
+                $task = Task::findOrFail($validated['id']);
+                $task->update([
+                    'ai_task' => $validated['ai_task'],
+                    'text_input' => $validated['text_input'],
+                    'due_date' => $dueDate,
+                    'assignee_id' => $assigneeId,
+                    'priority_id' => $priorityId,
+                    // created_by_id は含めない（元の値を保持）
+                ]);
+            } else {
+                $task = Task::create([
+                    'ai_task' => $validated['ai_task'],
+                    'text_input' => $validated['text_input'],
+                    'due_date' => $dueDate,
+                    'assignee_id' => $assigneeId,
+                    'priority_id' => $priorityId,
+                    'created_by_id' => $currentUser->id, //作成者を記録
+                ]);
+            }
+            // 5. リレーションを読み込む
+            // tasksテーブルには assignee_id / priority_id / created_by_id のIDしか保存されていないため、
+            // 担当者・優先度・作成者の情報（名前など）を取得してレスポンスに含める
+            $task->load(['assignee', 'priority', 'createdBy']);
+
+            // 6. 成功レスポンス
+            return response()->json([
+                'success' => true,
+                'message' => 'タスクを保存しました',
+                'data' => $task
+            ]);
+        } catch (\Exception $e) {
+            // 7. エラーレスポンス
+            return response()->json([
+                'success' => false,
+                'message' => 'タスクの保存に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ヘルパーメソッド1: 日付変換(YYYY年MM月DD日 → YYYY-MM-DD)
+    private function convertDateStringToDate($dateString)
+    {
+        // "指定なし" または空なら null
+        if (empty($dateString) || $dateString === '指定なし') {
+            return null;
+        }
+
+        // "2026年3月1日" から年月日を取得
+        if (preg_match('/(\d{4})年(\d{1,2})月(\d{1,2})日/', $dateString, $matches)) {
+            // sprintf で "2026-03-01" 形式に整形
+            return sprintf('%04d-%02d-%02d', $matches[1], $matches[2], $matches[3]);
+        }
+
+        return null;
+    }
+
+    // ヘルパーメソッド2: 担当者名 → User ID 変換
+    private function findUserIdByName($name)
+    {
+        // "指定なし" や "あなた" の場合
+        if (empty($name) || $name === '指定なし' || $name === 'あなた') {
+            return null;
+        }
+
+        // 名前でユーザーを検索
+        $user = User::where('name', $name)->first();
+        return $user ? $user->id : null;
+    }
+
+    // ヘルパーメソッド3: 優先度名 → Priority ID 変換
+    private function findPriorityIdByName($priorityName)
+    {
+        // "指定なし" の場合
+        if (empty($priorityName) || $priorityName === '指定なし') {
+            return null;
+        }
+
+        // 優先度名で検索
+        $priority = Priority::where('name', $priorityName)->first();
+        return $priority ? $priority->id : null;
+    }
 
 
     // ★★★ DELETE /api/tasks/{id} タスクを削除するメソッド
