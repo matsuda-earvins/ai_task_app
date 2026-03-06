@@ -11,7 +11,7 @@ use App\Models\Priority;
 
 class TaskController extends Controller
 {
-    // タスク一覧を取得(共通化メソッド)
+    // 一覧取得(共通化メソッド)
     private function getFilteredTasks(User $currentUser, string $filter)
     {
         // タスク取得用のクエリビルダを作成
@@ -53,7 +53,7 @@ class TaskController extends Controller
     }
 
 
-    // JSON API方式でタスク一覧を返すAPI用メソッド
+    // 一覧取得API : GET /api/tasks
     public function apiIndex(Request $request)
     {
         // 仮のログインユーザーを取得
@@ -72,7 +72,7 @@ class TaskController extends Controller
     }
 
 
-    // Blade（HTML）でタスク一覧を表示するメソッド
+    // 一覧表示(初回表示用) : GET /tasks
     public function index(Request $request)
     {
         $currentUser = User::where('email', 'matsuda@example.com')->first();
@@ -83,13 +83,7 @@ class TaskController extends Controller
         return view('tasks.index', compact('tasks', 'filter', 'currentUser'));
     }
 
-
-    public function settings()
-    {
-        return view('tasks.settings');
-    }
-
-    // POST /api/tasks/analyze タスクをAI解析するメソッド
+    // AI解析 : POST /api/tasks/analyze
     public function analyzeTask(Request $request)
     {
         // 入力バリデーション
@@ -232,13 +226,13 @@ class TaskController extends Controller
         }
     }
 
-    // POST /api/tasks タスクを保存するメソッド
-    public function store(Request $request)
-    {
 
+    // 新規作成 : POST /api/tasks
+    public function createNewTask(Request $request)
+    {
         // 1. 入力バリデーション
         $validated = $request->validate([
-            'id' => 'nullable|integer', // 編集時のみ存在
+            // ★ id は不要（新規作成なので）
             'ai_task' => 'required|string|max:500',
             'text_input' => 'required|string|max:500',
             'date' => 'nullable|string',        // "2026年3月1日"または"指定なし"
@@ -247,7 +241,7 @@ class TaskController extends Controller
         ]);
 
         try {
-            // ★★★ 2. ログインユーザーを取得（created_by_idに使用)
+            // ★★★ ログインユーザーを取得
             $currentUser = User::where('email', 'matsuda@example.com')->first();
 
             // 3. データ変換 (日付, 担当者, 優先度)
@@ -255,49 +249,84 @@ class TaskController extends Controller
             $assigneeId = $this->findUserIdByName($validated['assignee'] ?? null);
             $priorityId = $this->findPriorityIdByName($validated['priority'] ?? null);
 
-            // 4. DB保存(新規作成 or 編集)
-            if ($request->filled('id')) {
-                //既存のタスクを更新
-                $task = Task::findOrFail($validated['id']);
-                $task->update([
-                    'ai_task' => $validated['ai_task'],
-                    'text_input' => $validated['text_input'],
-                    'due_date' => $dueDate,
-                    'assignee_id' => $assigneeId,
-                    'priority_id' => $priorityId,
-                    // created_by_id は含めない（元の値を保持）
-                ]);
-            } else {
-                $task = Task::create([
-                    'ai_task' => $validated['ai_task'],
-                    'text_input' => $validated['text_input'],
-                    'due_date' => $dueDate,
-                    'assignee_id' => $assigneeId,
-                    'priority_id' => $priorityId,
-                    'created_by_id' => $currentUser->id, //作成者を記録
-                ]);
-            }
+            // 4. DB保存（新規作成)
+            $task = Task::create([
+                'ai_task' => $validated['ai_task'],
+                'text_input' => $validated['text_input'],
+                'due_date' => $dueDate,
+                'assignee_id' => $assigneeId,
+                'priority_id' => $priorityId,
+                'created_by_id' => $currentUser->id, // 作成者を記録
+            ]);
+
             // 5. リレーションを読み込む
             // tasksテーブルには assignee_id / priority_id / created_by_id のIDしか保存されていないため、
             // 担当者・優先度・作成者の情報（名前など）を取得してレスポンスに含める
             $task->load(['assignee', 'priority', 'createdBy']);
 
-            // 6. 成功レスポンス
+            // 6. レスポンス
             return response()->json([
                 'success' => true,
-                'message' => 'タスクを保存しました',
+                'message' => 'タスクを作成しました',
                 'data' => $task
             ]);
         } catch (\Exception $e) {
-            // 7. エラーレスポンス
             return response()->json([
                 'success' => false,
-                'message' => 'タスクの保存に失敗しました: ' . $e->getMessage()
+                'message' => 'タスクの作成に失敗しました: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    // ヘルパーメソッド1: 日付変換(YYYY年MM月DD日 → YYYY-MM-DD)
+
+    // 編集 : PUT /api/tasks/{id}
+    public function editTask(Request $request, $id)
+    {
+        // 1. バリデーション
+        $validated = $request->validate([
+            'ai_task' => 'required|string|max:500',
+            'text_input' => 'required|string|max:500',
+            'date' => 'nullable|string',
+            'assignee' => 'nullable|string',
+            'priority' => 'nullable|string',
+        ]);
+
+        try {
+            // 2. idをもとにタスクを検索(なければ404エラー)
+            $task = Task::findOrFail($id);
+
+            // 3. DB更新
+            $task->update([
+                'ai_task' => $validated['ai_task'],
+                'text_input' => $validated['text_input'],
+                'due_date' => $this->convertDateStringToDate($validated['date'] ?? null),
+                'assignee_id' => $this->findUserIdByName($validated['assignee'] ?? null),
+                'priority_id' => $this->findPriorityIdByName($validated['priority'] ?? null),
+            ]);
+
+            // 4. リレーションを読み込む
+            $task->load(['assignee', 'priority', 'createdBy']);
+
+            // 5. レスポンス
+            return response()->json([
+                'success' => true,
+                'message' => 'タスクを更新しました',
+                'data' => $task
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'タスクの更新に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    //==============================================================================
+    // ヘルパーメソッド (AIが返した文字列をDB保存用フォーマットへ変換) ★★★ Serviceクラスに分離してもいいかも
+    //==============================================================================
+
+    // 日付変換(YYYY年MM月DD日 → YYYY-MM-DD)
     private function convertDateStringToDate($dateString)
     {
         // "指定なし" または空なら null
@@ -314,10 +343,10 @@ class TaskController extends Controller
         return null;
     }
 
-    // ヘルパーメソッド2: 担当者名 → User ID 変換
+    // 担当者名 → User ID 変換
     private function findUserIdByName($name)
     {
-        // "指定なし" の場合
+        // "指定なし" の場合は null を返す
         if (empty($name) || $name === '指定なし') {
             return null;
         }
@@ -327,7 +356,7 @@ class TaskController extends Controller
         return $user ? $user->id : null;
     }
 
-    // ヘルパーメソッド3: 優先度名 → Priority ID 変換
+    // 優先度名 → Priority ID 変換
     private function findPriorityIdByName($priorityName)
     {
         // "指定なし" の場合
@@ -340,8 +369,10 @@ class TaskController extends Controller
         return $priority ? $priority->id : null;
     }
 
+    //==============================================================================
 
-    // DELETE /api/tasks/{id} タスクを削除するメソッド
+
+    // 削除 : DELETE /api/tasks/{id}
     public function destroy($id)
     {
         try {
@@ -365,8 +396,15 @@ class TaskController extends Controller
         }
     }
 
-    // ★★★ PATCH /api/tasks/{id}/complete タスクを完了にするメソッド
+    // 完了 : PATCH /api/tasks/{id}/complete
     // ・完了に日時を記録する
     // ・完了者を記録する
     // ・完了フラグを立てる
+
+
+    // 設定画面 : GET /settings
+    public function settings()
+    {
+        return view('tasks.settings');
+    }
 }

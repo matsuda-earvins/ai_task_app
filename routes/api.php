@@ -4,7 +4,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TaskController;
 
-Route::post('/tasks/analyze', [TaskController::class, 'analyzeTask']);
+// 一覧取得(JSON API方式)
 Route::get('/tasks', [TaskController::class, 'apiIndex']);
-Route::post('/tasks', [TaskController::class, 'store']);
+
+// AI解析
+Route::post('/tasks/analyze', [TaskController::class, 'analyzeTask']);
+
+// 新規作成
+Route::post('/tasks', [TaskController::class, 'createNewTask']);
+
+// 編集
+Route::put('/tasks/{id}', [TaskController::class, 'editTask']);
+
+// 削除
 Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
