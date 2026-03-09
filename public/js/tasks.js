@@ -857,6 +857,8 @@ function getPriorityClass(priority) {
  * @async
  */
 async function filterTasks(filter) {
+    if (currentFilter === filter) return;
+
     // 現在のフィルタ変数を更新
     currentFilter = filter;
 
