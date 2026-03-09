@@ -391,6 +391,7 @@ function isOtherMemberTask(task) {
  * 初期値として現在のユーザーを担当者に設定
  */
 function openNewTaskModal() {
+    // 空のオブジェクトでcurrentTaskを初期化
     currentTask = {
         textInput: "",
         aiTask: "",
@@ -426,6 +427,7 @@ function openNewTaskModal() {
 // ★★★ inline onclick を辞める必要がある
 // eslint-disable-next-line no-unused-vars
 function openTaskDetailModal(taskId) {
+    // currentTaskListから取得したタスクで初期化
     const task = currentTaskList.find((t) => t.id === taskId);
     if (!task) return;
     currentTask = task;
@@ -767,14 +769,67 @@ function completeTask() {
  * タスク完了を実行
  * 完了フラグと完了日時、完了者を設定
  */
-function executeCompleteTask() {
+async function executeCompleteTask() {
     if (!currentTask) return;
 
-    currentTask.completedFlg = true;
-    currentTask.completedAt = new Date().toISOString();
-    currentTask.completedBy = CURRENT_USER;
+    const completedTaskId = currentTask.id;
 
-    closeModal("taskDetailModal");
+    try {
+        // タスク完了APIにリクエストを送信
+        const response = await fetch(`/api/tasks/${currentTask.id}/complete`, {
+            method: "PATCH",
+            headers: {
+                "X-CSRF-TOKEN": csrfToken,
+                Accept: "application/json",
+            },
+        });
+
+        // APIレスポンス(JSON)を取得
+        const result = await response.json();
+
+        if (!result.success) {
+            alert("完了処理に失敗しました: " + (result.message || ""));
+            return;
+        }
+
+        // モーダルを閉じる
+        closeModal("taskDetailModal");
+
+        // ローカルのcurrentTaskを更新(APIレスポンスを使用する)
+        currentTask = transformTaskData(result.task);
+
+        // "self" | "member" | "unassigned" の場合
+        // currentTaskListから完了したタスクを除外
+        if (currentFilter !== "completed") {
+            currentTaskList = currentTaskList.filter(
+                (t) => t.id !== completedTaskId,
+            );
+        }
+
+        // タスク一覧を描画するコンテナを取得
+        const container = document.getElementById("taskListContainer");
+
+        // タスクがない場合
+        if (currentTaskList.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>タスクがありません</p>
+                </div>
+            `;
+            return;
+        }
+
+        // 現在のフィルター状態が 完了フィルターか判定
+        const isCompleted = currentFilter === "completed";
+
+        // タスク一覧HTMLを生成して、タスク表示エリアに表示
+        container.innerHTML = currentTaskList
+            .map((task) => renderTaskItem(task, isCompleted))
+            .join("");
+    } catch (error) {
+        alert("エラー: " + error.message);
+    }
 }
 
 //==============================================================================
