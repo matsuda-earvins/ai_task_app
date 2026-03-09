@@ -151,14 +151,18 @@ function transformTaskData(dbTask) {
  * DOMの読み込み完了後にイベントリスナーを設定
  */
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOMContentLoaded fired");
+
     setupEventListeners();
 
     // Bladeからフィルタを取得
     const filterTabsContainer = document.querySelector(".filter-tabs");
+    console.log("filterTabsContainer:", filterTabsContainer);
     const filter = filterTabsContainer?.dataset.filter || "self";
 
     // 初期表示: 取得したフィルタでタスク一覧を表示
     filterTasks(filter);
+    console.log("initial filter:", filter);
 });
 
 //==============================================================================
@@ -860,7 +864,8 @@ function getPriorityClass(priority) {
  * @async
  */
 async function filterTasks(filter) {
-    if (currentFilter === filter) return;
+    // 同じフィルタで、かつ既にデータがある場合のみスキップ
+    if (currentFilter === filter && currentTaskList.length > 0) return;
 
     // 現在のフィルタ変数を更新
     currentFilter = filter;
