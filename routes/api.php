@@ -18,3 +18,6 @@ Route::put('/tasks/{id}', [TaskController::class, 'editTask']);
 
 // 削除
 Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+
+// 完了
+Route::patch('/tasks/{id}/complete', [TaskController::class, 'complete']);

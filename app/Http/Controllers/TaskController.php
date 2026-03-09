@@ -346,9 +346,37 @@ class TaskController extends Controller
     }
 
     // 完了 : PATCH /api/tasks/{id}/complete
-    // ・完了に日時を記録する
-    // ・完了者を記録する
-    // ・完了フラグを立てる
+    public function complete($id)
+    {
+        try {
+            // タスクを検索 (なければ404エラー)
+            $task = Task::findOrFail($id);
+
+            $currentUser = User::where('email', 'matsuda@example.com')->first();
+
+            // DBを更新
+            $task->update([
+                'completed_flg' => true,
+                'completed_at' => now(),
+                'completed_by_id' => $currentUser->id
+            ]);
+
+            // リレーションを読み込む（フロントで使うため）
+            $task->load(['assignee', 'priority', 'createdBy', 'completedBy']);
+
+            // 成功レスポンス
+            return response()->json([
+                'success' => true,
+                'message' => 'タスクを完了しました',
+                'task' => $task
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'タスクの完了に失敗しました: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
 
     // 設定画面 : GET /settings
