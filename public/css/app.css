@@ -695,6 +695,7 @@ body {
 
 .completed-task .task-title {
     color: #7f8c8d;
+    text-decoration: line-through;
 }
 
 .completed-info {
