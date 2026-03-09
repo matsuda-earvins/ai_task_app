@@ -259,7 +259,7 @@ function setupEventListeners() {
         deleteTaskBtn.addEventListener("click", deleteTask);
     }
 
-    // クリックしたフィルタを検知して、filterTasksを実行
+    // ユーザーがフィルターをクリックした際の処理
     document.querySelectorAll(".filter-tab").forEach((tab) => {
         tab.addEventListener("click", (e) => {
             const filter = e.target.dataset.filter;
