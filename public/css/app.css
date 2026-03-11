@@ -1397,3 +1397,25 @@ body {
         font-size: 24px;
     }
 }
+
+/* エラーメッセージ */
+.auth-error {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background-color: #fee;
+    border: 1px solid #fcc;
+    border-radius: 12px;
+    color: #c0392b;
+}
+
+.auth-error i {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.auth-error span {
+    font-size: 14px;
+    line-height: 1.5;
+}

@@ -15,15 +15,25 @@
             </div>
 
             <!-- ログインフォーム -->
-            <form method="POST" action="#" class="auth-form">
+            <form method="POST" action="{{ route('login') }}" class="auth-form">
+                @csrf
+
+                <!-- エラーメッセージ表示 -->
+                @if ($errors->any())
+                    <div class='auth-error'>
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>{{ $errors->first() }}</span>
+                    </div>
+                @endif
+
                 <!-- メールアドレス -->
                 <div class="auth-field">
                     <label for="email" class="auth-label">
                         <i class="fas fa-envelope"></i>
                         <span>メールアドレス</span>
                     </label>
-                    <input type="email" id="email" name="email" 
-                           class="auth-input" placeholder="example@example.com" required autofocus>
+                    <input type="email" id="email" name="email" class="auth-input" placeholder="example@example.com"
+                        required autofocus>
                 </div>
 
                 <!-- パスワード -->
@@ -32,8 +42,7 @@
                         <i class="fas fa-lock"></i>
                         <span>パスワード</span>
                     </label>
-                    <input type="password" id="password" name="password" 
-                           class="auth-input" placeholder="8文字以上" required>
+                    <input type="password" id="password" name="password" class="auth-input" placeholder="8文字以上" required>
                 </div>
 
                 <!-- ログイン状態を保持 -->

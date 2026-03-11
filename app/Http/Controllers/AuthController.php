@@ -17,6 +17,28 @@ class AuthController extends Controller
     // ログイン処理を行うメソッド
     public function login(Request $request)
     {
-        // 後でログイン処理を書く
+        // バリデーションチェック（入力チェック）
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required'],
+        ]);
+
+        // ログイン試行
+        // Auth::attempt() : データベースのユーザー情報とメールアドレスとパスワード（ハッシュ化）が一致していたらtrueを返す
+        if (Auth::attempt($credentials)) {
+            // ログイン成功
+            // session()->regenerate() : セッションIDを再生成する（セキュリティ対策）
+            $request->session()->regenerate();
+            // intended() : 元々アクセスしようとしていたページに移動（なければ /(トップページ) に移動）
+            return redirect()->intended('/');
+        }
+
+        // ログイン失敗
+        // back() : 前のページにリダイレクト
+        // withErrors() : エラーメッセージをセッションに保存
+        // onlyInput('email') : メールアドレスだけ入力を保持
+        return back()->withErrors([
+            'email' => 'メールアドレスまたはパスワードが正しくありません。',
+        ])->onlyInput('email');
     }
 }
