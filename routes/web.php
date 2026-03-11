@@ -17,6 +17,18 @@ Route::middleware('guest')->group(function () {
 
     // 新規登録処理（フォーム送信時）
     Route::post('/register', [AuthController::class, 'register']);
+
+    // パスワードリセット申請画面
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+
+    // パスワードリセットメール送信
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
+
+    // パスワードリセット画面
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
+
+    // パスワードリセット処理
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
 // ログアウト処理 (ログイン済みの人だけ)
@@ -26,8 +38,4 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 Route::middleware('auth')->group(function () {
     Route::get('/', [TaskController::class, 'index'])->name('tasks.index');
     Route::get('/settings',  [TaskController::class, 'settings'])->name('tasks.settings');
-});
-
-Route::get('/forgot-password', function () {
-    return view('auth.reset-password');
 });

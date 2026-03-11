@@ -59,7 +59,7 @@
 
                 <!-- パスワードを忘れた方 -->
                 <div class="auth-link-container">
-                    <a href="#" class="auth-link">
+                    <a href="{{ route('password.request') }}" class="auth-link">
                         パスワードを忘れた方
                     </a>
                 </div>

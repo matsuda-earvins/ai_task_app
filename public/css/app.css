@@ -1424,6 +1424,7 @@ body {
 
 /* 説明文 */
 .auth-description {
+    text-align: center;
     margin-bottom: 24px;
     padding: 16px;
     background-color: #f8f9fa;

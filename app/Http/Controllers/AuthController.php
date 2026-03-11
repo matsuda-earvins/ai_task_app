@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 // Laravelの認証機能を利用するFacade
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -94,5 +95,57 @@ class AuthController extends Controller
 
         // トップページにリダイレクト
         return redirect()->route('tasks.index');
+    }
+
+
+    // パスワードリセット申請画面表示
+    public function showForgotPasswordForm()
+    {
+        return view('auth.forgot-password');
+    }
+    // パスワードリセットメール送信
+    public function sendResetLinkEmail(Request $request)
+    {
+        // メールアドレスのバリデーション
+        $request->validate(['email' => 'required|email']);
+        // パスワードリセットリンクを送信
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+        // 送信結果に応じてメッセージを表示
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with(['status' => 'パスワードリセット用のリンクをメールで送信しました。'])
+            : back()->withErrors(['email' => 'このメールアドレスは登録されていません。']);
+    }
+    // パスワードリセット画面表示
+    public function showResetPasswordForm(Request $request, string $token)
+    {
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => $request->email
+        ]);
+    }
+    // パスワードリセット処理
+    public function resetPassword(Request $request)
+    {
+        // バリデーション
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed',
+        ]);
+        // パスワードをリセット
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password) {
+                $user->forceFill([
+                    'password' => $password
+                ])->save();
+            }
+        );
+        // リセット結果に応じてリダイレクト
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('status', 'パスワードを再設定しました。ログインしてください。')
+            : back()->withErrors(['email' => 'パスワードのリセットに失敗しました。']);
     }
 }

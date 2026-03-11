@@ -20,7 +20,12 @@
             </div>
 
             <!-- フォーム -->
-            <form method="POST" action="#" class="auth-form">
+            <form method="POST" action="{{ route('password.update') }}" class="auth-form">
+                @csrf
+
+                <input type="hidden" name="token" value="{{ $token }}">
+                <input type="hidden" name="email" value="{{ $email }}">
+
                 <!-- エラーメッセージ -->
                 @if ($errors->any())
                     <div class="auth-error">
@@ -39,8 +44,8 @@
                         <i class="fas fa-envelope"></i>
                         <span>メールアドレス</span>
                     </label>
-                    <input type="email" id="email_display" value="" 
-                           class="auth-input auth-input-disabled" disabled>
+                    <input type="email" id="email_display" value="{{ $email }}"
+                        class="auth-input auth-input-disabled" disabled>
                 </div>
 
                 <!-- 新しいパスワード -->
@@ -49,8 +54,8 @@
                         <i class="fas fa-lock"></i>
                         <span>新しいパスワード</span>
                     </label>
-                    <input type="password" id="password" name="password" 
-                           class="auth-input" placeholder="8文字以上" required minlength="8" autofocus>
+                    <input type="password" id="password" name="password" class="auth-input" placeholder="8文字以上" required
+                        minlength="8" autofocus>
                 </div>
 
                 <!-- パスワード確認 -->
@@ -59,8 +64,8 @@
                         <i class="fas fa-lock"></i>
                         <span>パスワード（確認）</span>
                     </label>
-                    <input type="password" id="password_confirmation" name="password_confirmation" 
-                           class="auth-input" placeholder="もう一度入力してください" required minlength="8">
+                    <input type="password" id="password_confirmation" name="password_confirmation" class="auth-input"
+                        placeholder="もう一度入力してください" required minlength="8">
                 </div>
 
                 <!-- 再設定ボタン -->

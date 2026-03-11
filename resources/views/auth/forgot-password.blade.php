@@ -16,12 +16,13 @@
 
             <!-- 説明文 -->
             <div class="auth-description">
-                <p>登録されているメールアドレスを入力してください。</p>
-                <p>パスワードリセット用のリンクをお送りします。</p>
+                <p>登録中のメールアドレスを入力してください</p>
             </div>
 
             <!-- フォーム -->
-            <form method="POST" action="#" class="auth-form">
+            <form method="POST" action="{{ route('password.email') }}" class="auth-form">
+                @csrf
+
                 <!-- 成功メッセージ -->
                 @if (session('status'))
                     <div class="auth-success">
@@ -44,8 +45,8 @@
                         <i class="fas fa-envelope"></i>
                         <span>メールアドレス</span>
                     </label>
-                    <input type="email" id="email" name="email" value="{{ old('email') }}" 
-                           class="auth-input" placeholder="example@example.com" required autofocus>
+                    <input type="email" id="email" name="email" value="{{ old('email') }}" class="auth-input"
+                        placeholder="example@example.com" required autofocus>
                 </div>
 
                 <!-- 送信ボタン -->
