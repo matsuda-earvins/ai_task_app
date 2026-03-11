@@ -10,5 +10,8 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 // ログイン処理（フォーム送信時）
 Route::post('/login', [AuthController::class, 'login']);
 
+// ログアウト処理
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
 Route::get('/', [TaskController::class, 'index'])->name('tasks.index');
 Route::get('/settings',  [TaskController::class, 'settings'])->name('tasks.settings');
