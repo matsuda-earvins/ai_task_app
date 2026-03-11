@@ -1422,6 +1422,54 @@ body {
     margin-top: -4px;
 }
 
+/* 説明文 */
+.auth-description {
+    margin-bottom: 24px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+}
+
+.auth-description p {
+    font-size: 14px;
+    color: #7f8c8d;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.auth-description p + p {
+    margin-top: 8px;
+}
+
+/* 成功メッセージ */
+.auth-success {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 12px;
+    color: #27ae60;
+}
+
+.auth-success i {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.auth-success span {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* 無効化された入力フィールド */
+.auth-input-disabled {
+    background-color: #f8f9fa;
+    color: #7f8c8d;
+    cursor: not-allowed;
+}
+
 /* エラーメッセージ（複数行対応） */
 .auth-error-content {
     display: flex;
