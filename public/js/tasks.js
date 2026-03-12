@@ -562,10 +562,16 @@ async function createNewTask() {
         currentTask.priority = parsedTask.priority || "指定なし";
 
         // ユーザーの手動入力で上書き(日付、担当者、優先度)
-        const manualDate = document.getElementById("detailDate").textContent;
+        const detailDateElement = document.getElementById("detailDate");
+        const manualDate =
+            detailDateElement.dataset.date || detailDateElement.textContent;
+        const manualTime = detailDateElement.dataset.time || null;
+
         if (manualDate && manualDate !== "指定なし") {
             currentTask.date = manualDate;
         }
+
+        currentTask.time = manualTime;
 
         const manualAssignee =
             document.getElementById("detailAssignee").textContent;
@@ -591,6 +597,7 @@ async function createNewTask() {
                 ai_task: currentTask.aiTask,
                 text_input: currentTask.textInput,
                 date: currentTask.date,
+                time: currentTask.time,
                 assignee: currentTask.assignee,
                 priority: currentTask.priority,
             }),
