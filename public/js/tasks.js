@@ -1348,11 +1348,18 @@ function saveDateSelection() {
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth() + 1;
         const day = selectedDate.getDate();
-        const formatted = `${year}年${month}月${day}日`;
+        const formatted = `${month}月${day}日`;
+
+        // 時間が選択されている場合は追加
+        if (selectedTime) {
+            formatted += ` ${selectedTime}`;
+        }
 
         const detailDate = document.getElementById("detailDate");
         if (detailDate) {
             detailDate.textContent = formatted;
+            detailDate.dataset.date = `${year}年${month}月${day}日`;
+            detailDate.dataset.time = selectedTime || "";
         }
     }
     closeModal("dateSelectModal");
