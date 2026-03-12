@@ -20,6 +20,7 @@ class Task extends Model
         'text_input',
         'ai_task',
         'due_date',
+        'due_time',
         'assignee_id',
         'priority_id',
         'created_by_id',

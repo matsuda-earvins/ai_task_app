@@ -58,6 +58,12 @@ let currentTaskList = [];
 let selectedDate = null;
 
 /**
+ * 日付選択モーダルで選択された時間
+ * @type {string|null} "HH:MM" 形式 (例: "11:30") または null
+ */
+let selectedTime = null;
+
+/**
  * カレンダー表示中の年
  * @type {number}
  */
@@ -82,17 +88,16 @@ let alertCallback = null;
 /**
  * データベースの日付形式を日本語の年月日形式に変換
  * @param {string|null} dateString - YYYY-MM-DD HH:MM:SS形式の日付文字列
- * @returns {string} YYYY年MM月DD日形式の文字列、またはnullの場合は「指定なし」
+ * @returns {string} MM月DD日形式の文字列、またはnullの場合は「指定なし」
  */
 function formatDate(dateString) {
     if (!dateString) return "指定なし";
 
     const date = new Date(dateString);
-    const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
 
-    return `${year}年${month}月${day}日`;
+    return `${month}月${day}日`;
 }
 
 /**
@@ -132,6 +137,7 @@ function transformTaskData(dbTask) {
         aiTask: dbTask.ai_task,
         textInput: dbTask.text_input,
         date: formatDate(dbTask.due_date),
+        time: dbTask.due_time ? dbTask.due_time.substring(0, 5) : null,
         assignee: dbTask.assignee?.name || "指定なし",
         priority: dbTask.priority?.name || "指定なし",
         priorityCode: dbTask.priority?.code || "none",
@@ -311,6 +317,30 @@ function setupEventListeners() {
         clearDateBtn.addEventListener("click", clearDateSelection);
     }
 
+    // クリックで時間ピッカーの表示・非表示切替
+    const timeBtn = document.getElementById("timeBtn");
+    if (timeBtn) {
+        timeBtn.addEventListener("click", toggleTimePicker);
+    }
+
+    // クリックで時間選択をクリア（時間ピッカー内の✕ボタン）
+    const timeClearBtn = document.getElementById("timeClearBtn");
+    if (timeClearBtn) {
+        timeClearBtn.addEventListener("click", clearTimeSelection);
+    }
+
+    // 変更時に選択された'時間'を更新（時のドロップボタン）
+    const hourSelect = document.getElementById("hourSelect");
+    if (hourSelect) {
+        hourSelect.addEventListener("change", updateTimeSelection);
+    }
+
+    // 変更時に選択された'分'を更新（分のドロップボタン）
+    const minuteSelect = document.getElementById("minuteSelect");
+    if (minuteSelect) {
+        minuteSelect.addEventListener("change", updateTimeSelection);
+    }
+
     const alertCancelBtn = document.getElementById("alertCancelBtn");
     if (alertCancelBtn) {
         alertCancelBtn.addEventListener("click", () => {
@@ -415,7 +445,10 @@ function openNewTaskModal() {
 
     // 画面表示（初期）
     document.getElementById("textInputField").value = "";
+    const detailDate = document.getElementById("detailDate");
     document.getElementById("detailDate").textContent = "指定なし";
+    detailDate.dataset.date = "";
+    detailDate.dataset.time = "";
     document.getElementById("detailAssignee").textContent = CURRENT_USER;
     document.querySelectorAll(".priority-btn").forEach((btn) => {
         btn.classList.remove("active", "high", "medium", "low");
@@ -445,9 +478,16 @@ function openTaskDetailModal(taskId) {
 
     // 画面表示（編集）
     document.getElementById("textInputField").value = task.aiTask;
-    document.getElementById("detailDate").textContent = task.date;
+
+    const detailDate = document.getElementById("detailDate");
+    const displayText = task.time ? `${task.date} ${task.time}` : task.date;
+    detailDate.textContent = displayText;
+    detailDate.dataset.date = task.date;
+    detailDate.dataset.time = task.time || "";
+
     document.getElementById("detailAssignee").textContent =
         task.assignee === CURRENT_USER ? CURRENT_USER : task.assignee;
+
     document.querySelectorAll(".priority-btn").forEach((btn) => {
         btn.classList.remove("active", "high", "medium", "low");
         if (btn.dataset.priority === task.priority) {
@@ -521,10 +561,16 @@ async function createNewTask() {
         currentTask.priority = parsedTask.priority || "指定なし";
 
         // ユーザーの手動入力で上書き(日付、担当者、優先度)
-        const manualDate = document.getElementById("detailDate").textContent;
+        const detailDateElement = document.getElementById("detailDate");
+        const manualDate =
+            detailDateElement.dataset.date || detailDateElement.textContent;
+        const manualTime = detailDateElement.dataset.time || null;
+
         if (manualDate && manualDate !== "指定なし") {
             currentTask.date = manualDate;
         }
+
+        currentTask.time = manualTime;
 
         const manualAssignee =
             document.getElementById("detailAssignee").textContent;
@@ -550,6 +596,7 @@ async function createNewTask() {
                 ai_task: currentTask.aiTask,
                 text_input: currentTask.textInput,
                 date: currentTask.date,
+                time: currentTask.time,
                 assignee: currentTask.assignee,
                 priority: currentTask.priority,
             }),
@@ -601,8 +648,13 @@ async function editTask() {
         currentTask.aiTask = textInput; // 編集時はテキスト入力をそのまま使用
 
         // ユーザーの手動入力を取得
-        const manualDate = document.getElementById("detailDate").textContent;
+        const detailDateElement = document.getElementById("detailDate");
+        const manualDate =
+            detailDateElement.dataset.date || detailDateElement.textContent;
+        const manualTime = detailDateElement.dataset.time || null;
+
         currentTask.date = manualDate || "指定なし";
+        currentTask.time = manualTime;
 
         const manualAssignee =
             document.getElementById("detailAssignee").textContent;
@@ -624,6 +676,7 @@ async function editTask() {
                 ai_task: currentTask.aiTask,
                 text_input: currentTask.textInput,
                 date: currentTask.date,
+                time: currentTask.time,
                 assignee: currentTask.assignee,
                 priority: currentTask.priority,
             }),
@@ -864,9 +917,6 @@ function getPriorityClass(priority) {
  * @async
  */
 async function filterTasks(filter) {
-    // 同じフィルタで、かつ既にデータがある場合のみスキップ
-    if (currentFilter === filter && currentTaskList.length > 0) return;
-
     // 現在のフィルタ変数を更新
     currentFilter = filter;
 
@@ -935,6 +985,9 @@ function renderTaskItem(task, isCompleted = false) {
     const completedClass = isCompleted ? "completed-task" : "";
     const checkboxContent = isCompleted ? '<i class="fas fa-check"></i>' : "";
 
+    // 時間がある場合は日付と時間を表示、ない場合は日付のみ
+    const dateTimeDisplay = task.time ? `${task.date} ${task.time}` : task.date;
+
     return `
         <div class="task-item ${completedClass}" onclick="openTaskDetailModal(${task.id})">
             ${isCompleted ? renderCompletedInfo(task, checkboxContent, getPriorityClass(task.priority)) : ""}
@@ -945,7 +998,7 @@ function renderTaskItem(task, isCompleted = false) {
             <div class="task-meta">
                 <div class="task-meta-item">
                     <i class="far fa-calendar"></i>
-                    <span>${task.date}</span>
+                    <span>${dateTimeDisplay}</span>
                 </div>
                 <div class="task-meta-item">
                     <i class="far fa-user"></i>
@@ -1054,8 +1107,128 @@ function openDateSelectModal() {
     currentYear = today.getFullYear();
     currentMonth = today.getMonth();
 
+    const detailDate = document.getElementById("detailDate");
+    const existingTime = detailDate?.dataset.time || null;
+
+    initializeTimePicker();
+
+    // 既存の時間があれば時間ピッカーに反映
+    if (existingTime) {
+        const [hour, minute] = existingTime.split(":");
+        document.getElementById("hourSelect").value = hour;
+        document.getElementById("minuteSelect").value = minute;
+        selectedTime = existingTime;
+        updateTimeBtnText();
+    }
+
     renderCalendar();
     openModal("dateSelectModal");
+}
+
+/**
+ * 時間ピッカーを初期化
+ * 時のドロップダウンに0-23の選択肢を追加
+ */
+function initializeTimePicker() {
+    const hourSelect = document.getElementById("hourSelect");
+    if (!hourSelect) return;
+
+    // 時のドロップダウンに0-23の選択肢を追加（初回のみ）
+    if (hourSelect.options.length <= 1) {
+        for (let i = 0; i < 24; i++) {
+            const option = document.createElement("option");
+            option.value = String(i).padStart(2, "0");
+            option.textContent = String(i).padStart(2, "0");
+            hourSelect.appendChild(option);
+        }
+    }
+
+    // 選択状態をリセット
+    hourSelect.value = "";
+    document.getElementById("minuteSelect").value = "";
+    selectedTime = null;
+
+    // 時間ピッカーを非表示にする
+    const timePickerContainer = document.getElementById("timePickerContainer");
+    if (timePickerContainer) {
+        timePickerContainer.style.display = "none";
+    }
+
+    // 時間選択ボタンのアクティブ状態を解除
+    const timeBtn = document.getElementById("timeBtn");
+    if (timeBtn) {
+        timeBtn.classList.remove("active");
+    }
+
+    updateTimeBtnText();
+}
+
+/**
+ * 時間ピッカーの表示/非表示を切り替え
+ */
+function toggleTimePicker() {
+    const timePickerContainer = document.getElementById("timePickerContainer");
+    const timeBtn = document.getElementById("timeBtn");
+
+    if (!timePickerContainer) return;
+
+    if (timePickerContainer.style.display === "none") {
+        timePickerContainer.style.display = "block";
+        if (timeBtn) timeBtn.classList.add("active");
+    } else {
+        timePickerContainer.style.display = "none";
+        if (timeBtn) timeBtn.classList.remove("active");
+    }
+}
+
+/**
+ * 時間選択を更新
+ * 時と分の両方が選択されている場合のみ selectedTime を更新
+ */
+function updateTimeSelection() {
+    const hourSelect = document.getElementById("hourSelect");
+    const minuteSelect = document.getElementById("minuteSelect");
+
+    if (!hourSelect || !minuteSelect) return;
+
+    const hour = hourSelect.value;
+    const minute = minuteSelect.value;
+
+    if (hour && minute) {
+        selectedTime = `${hour}:${minute}`;
+    } else {
+        selectedTime = null;
+    }
+
+    updateTimeBtnText();
+}
+
+/**
+ * 時間選択をクリア
+ */
+function clearTimeSelection() {
+    const hourSelect = document.getElementById("hourSelect");
+    const minuteSelect = document.getElementById("minuteSelect");
+
+    if (hourSelect) hourSelect.value = "";
+    if (minuteSelect) minuteSelect.value = "";
+
+    selectedTime = null;
+    updateTimeBtnText();
+}
+
+/**
+ * 時間選択ボタンのテキストを更新
+ */
+function updateTimeBtnText() {
+    const timeBtnText = document.getElementById("timeBtnText");
+    if (!timeBtnText) return;
+
+    if (selectedTime) {
+        timeBtnText.textContent = selectedTime;
+    } else {
+        timeBtnText.textContent = "時間を選択";
+    }
 }
 
 /**
@@ -1211,11 +1384,21 @@ function saveDateSelection() {
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth() + 1;
         const day = selectedDate.getDate();
-        const formatted = `${year}年${month}月${day}日`;
+
+        // 表示形式（MM月DD日）
+        let formattedDate = `${month}月${day}日`;
+
+        // 時間が選択されている場合は追加
+        if (selectedTime) {
+            formattedDate += ` ${selectedTime}`;
+        }
 
         const detailDate = document.getElementById("detailDate");
         if (detailDate) {
-            detailDate.textContent = formatted;
+            detailDate.textContent = formattedDate;
+            // 日付と時間を分離（API送信用）
+            detailDate.dataset.date = `${year}年${month}月${day}日`;
+            detailDate.dataset.time = selectedTime || "";
         }
     }
     closeModal("dateSelectModal");
@@ -1226,9 +1409,13 @@ function saveDateSelection() {
  */
 function clearDateSelection() {
     selectedDate = null;
+    selectedTime = null;
     const detailDate = document.getElementById("detailDate");
     if (detailDate) {
         detailDate.textContent = "指定なし";
+        // API送信時に空のデータを送るため
+        detailDate.dataset.date = "";
+        detailDate.dataset.time = "";
     }
     closeModal("dateSelectModal");
 }
