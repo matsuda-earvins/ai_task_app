@@ -138,6 +138,7 @@ function transformTaskData(dbTask) {
         aiTask: dbTask.ai_task,
         textInput: dbTask.text_input,
         date: formatDate(dbTask.due_date),
+        time: dbTask.due_time ? dbTask.due_time.substring(0, 5) : null,
         assignee: dbTask.assignee?.name || "指定なし",
         priority: dbTask.priority?.name || "指定なし",
         priorityCode: dbTask.priority?.code || "none",
