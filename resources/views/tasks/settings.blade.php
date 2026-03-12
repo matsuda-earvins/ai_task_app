@@ -14,18 +14,18 @@
 
         <div class="settings-content">
             <div class="settings-section">
-                <div class="settings-item">
+                <a href="{{ route('account.edit') }}" class="settings-item">
                     <div class="settings-item-icon account">
                         <i class="fas fa-user"></i>
                     </div>
                     <div class="settings-item-content">
                         <div class="settings-item-title">アカウント</div>
-                        <div class="settings-item-subtitle">user@example.com</div>
+                        <div class="settings-item-subtitle">{{ Auth::user()->email }}</div>
                     </div>
                     <div class="settings-item-arrow">
                         <i class="fas fa-chevron-right"></i>
                     </div>
-                </div>
+                </a>
             </div>
 
             <div class="settings-section">

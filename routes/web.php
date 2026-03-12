@@ -36,6 +36,15 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middl
 
 // 認証が必要なルート（ログインしている人だけアクセス可能）
 Route::middleware('auth')->group(function () {
+    // タスク画面
     Route::get('/', [TaskController::class, 'index'])->name('tasks.index');
+
+    // 設定画面
     Route::get('/settings',  [TaskController::class, 'settings'])->name('tasks.settings');
+
+    // アカウント編集画面
+    Route::get('/account', [AuthController::class, 'showAccountForm'])->name('account.edit');
+
+    // アカウント情報更新
+    Route::post('/account', [AuthController::class, 'updateAccount'])->name('account.update');
 });

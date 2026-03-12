@@ -148,4 +148,60 @@ class AuthController extends Controller
             ? redirect()->route('login')->with('status', 'パスワードを再設定しました。ログインしてください。')
             : back()->withErrors(['email' => 'パスワードのリセットに失敗しました。']);
     }
+
+
+    // アカウント編集画面を表示
+    public function showAccountForm()
+    {
+        return view('auth.account');
+    }
+
+    // アカウント情報更新処理　
+    public function updateAccount(Request $request)
+    {
+        $user = Auth::user();
+
+        $rules = [
+            'name' => ['required', 'string', 'max:50'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:ai_tasks_M_users,email,' . $user->id],
+        ];
+
+        // パスワード変更がある場合のバリデーション
+        if ($request->filled('current_password') || $request->filled('password')) {
+            $rules['current_password'] = ['required', 'current_password'];
+            $rules['password'] = ['required', 'string', 'min:8', 'confirmed'];
+        }
+
+        // エラーメッセージ
+        $message = [
+            'current_password.required' => '現在のパスワードを入力してください。',
+            'current_password.current_password' => '現在のパスワードが正しくありません。',
+            'password.required' => '新しいパスワードを入力してください。',
+            'password.min' => '新しいパスワードは:min文字以上で入力してください。',
+            'password.confirmed' => 'パスワード確認が一致しません。',
+            'name.required' => 'ユーザー名を入力してください。',
+            'name.max' => 'ユーザー名は:max文字以内で入力してください。',
+            'email.required' => 'メールアドレスを入力してください。',
+            'email.email' => '有効なメールアドレスを入力してください。',
+            'email.unique' => 'このメールアドレスは既に使用されています。',
+        ];
+
+        // validate([ フィールド名 => バリデーションルール ]) : フォームの入力がルールを満たすか検証する
+        $validated = $request->validate($rules, $message);
+
+        // 名前とメールアドレスを更新
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+
+        // バスワード変更がある場合は更新
+        if ($request->filled('password')) {
+            $user->password = $validated['password'];
+        }
+
+        /** @var \App\Models\User $user */
+        $user->save();
+
+        // セッションにメッセージを保存（次の1リクエストだけ使える)
+        return back()->with('status', 'アカウント情報を更新しました。');
+    }
 }
