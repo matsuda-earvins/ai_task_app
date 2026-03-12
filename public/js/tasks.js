@@ -649,8 +649,13 @@ async function editTask() {
         currentTask.aiTask = textInput; // 編集時はテキスト入力をそのまま使用
 
         // ユーザーの手動入力を取得
-        const manualDate = document.getElementById("detailDate").textContent;
+        const detailDateElement = document.getElementById("detailDate");
+        const manualDate =
+            detailDateElement.dataset.date || detailDateElement.textContent;
+        const manualTime = detailDateElement.dataset.time || null;
+
         currentTask.date = manualDate || "指定なし";
+        currentTask.time = manualTime;
 
         const manualAssignee =
             document.getElementById("detailAssignee").textContent;
@@ -672,6 +677,7 @@ async function editTask() {
                 ai_task: currentTask.aiTask,
                 text_input: currentTask.textInput,
                 date: currentTask.date,
+                time: currentTask.time,
                 assignee: currentTask.assignee,
                 priority: currentTask.priority,
             }),
