@@ -479,9 +479,16 @@ function openTaskDetailModal(taskId) {
 
     // 画面表示（編集）
     document.getElementById("textInputField").value = task.aiTask;
-    document.getElementById("detailDate").textContent = task.date;
+
+    const detailDate = document.getElementById("detailDate");
+    const displayText = task.time ? `${task.date} ${task.time}` : task.date;
+    detailDate.textContent = displayText;
+    detailDate.dataset.date = task.date;
+    detailDate.dataset.time = task.time || "";
+
     document.getElementById("detailAssignee").textContent =
         task.assignee === CURRENT_USER ? CURRENT_USER : task.assignee;
+
     document.querySelectorAll(".priority-btn").forEach((btn) => {
         btn.classList.remove("active", "high", "medium", "low");
         if (btn.dataset.priority === task.priority) {
