@@ -1098,7 +1098,20 @@ function openDateSelectModal() {
     currentYear = today.getFullYear();
     currentMonth = today.getMonth();
 
+    const detailDate = document.getElementById("detailDate");
+    const existingTime = detailDate?.dataset.time || null;
+
     initializeTimePicker();
+
+    // 既存の時間があれば時間ピッカーに反映
+    if (existingTime) {
+        const [hour, minute] = existingTime.split(":");
+        document.getElementById("hourSelect").value = hour;
+        document.getElementById("minuteSelect").value = minute;
+        selectedTime = existingTime;
+        updateTimeBtnText();
+    }
+
     renderCalendar();
     openModal("dateSelectModal");
 }
