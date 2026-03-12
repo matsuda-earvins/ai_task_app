@@ -127,6 +127,392 @@ function showErrorMessage(message) {
 }
 
 /**
+ * タスクを日付でグループ化
+ * @param {Array<Object>} tasks - タスクの配列
+ * @returns {Array<Object>} グループ化されたタスク配列
+ */
+function groupTasksByDate(tasks) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // グループを作成
+    const groups = {
+        overdue: [],
+        today: [],
+        tomorrow: [],
+        future: {},
+    };
+
+    tasks.forEach((task) => {
+        if (!task.dueDate) return;
+
+        const taskDate = new Date(task.dueDate);
+        taskDate.setHours(0, 0, 0, 0);
+
+        if (taskDate < today) {
+            // 期限切れ
+            groups.overdue.push(task);
+        } else if (taskDate.getTime() === today.getTime()) {
+            // 今日
+            groups.today.push(task);
+        } else if (taskDate.getTime() === tomorrow.getTime()) {
+            // 明日
+            groups.tomorrow.push(task);
+        } else {
+            // 以降の日付
+            const dateKey = taskDate.toISOString().split("T")[0];
+            if (!groups.future[dateKey]) {
+                groups.future[dateKey] = [];
+            }
+            groups.future[dateKey].push(task);
+        }
+    });
+
+    // グループ内でソート
+    groups.overdue = sortTasksWithinGroup(groups.overdue, true); // 期限切れは古い順
+    groups.today = sortTasksWithinGroup(groups.today);
+    groups.tomorrow = sortTasksWithinGroup(groups.tomorrow);
+
+    // 結果を配列に変換
+    const result = [];
+
+    // 期限切れ
+    if (groups.overdue.length > 0) {
+        result.push({
+            type: "overdue",
+            headerText: "期限切れ",
+            tasks: groups.overdue,
+        });
+    }
+
+    // 今日
+    if (groups.today.length > 0) {
+        result.push({
+            type: "today",
+            headerText: formatDateHeader(today, "today"),
+            tasks: groups.today,
+        });
+    }
+
+    // 明日
+    if (groups.tomorrow.length > 0) {
+        result.push({
+            type: "tomorrow",
+            headerText: formatDateHeader(tomorrow, "tomorrow"),
+            tasks: groups.tomorrow,
+        });
+    }
+
+    // 以降の日付（昇順）
+    const futureDates = Object.keys(groups.future).sort();
+    futureDates.forEach((dateKey) => {
+        const date = new Date(dateKey);
+        result.push({
+            type: "future",
+            headerText: formatDateHeader(date, "future"),
+            tasks: sortTasksWithinGroup(groups.future[dateKey]),
+        });
+    });
+
+    return result;
+}
+
+/**
+ * 日付ヘッダーのフォーマット
+ * @param {Date} date - 日付オブジェクト
+ * @param {string} type - グループタイプ ('today', 'tomorrow', 'future')
+ * @returns {string} フォーマットされた日付ヘッダー文字列
+ */
+function formatDateHeader(date, type) {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekdays = [
+        "日曜日",
+        "月曜日",
+        "火曜日",
+        "水曜日",
+        "木曜日",
+        "金曜日",
+        "土曜日",
+    ];
+    const weekday = weekdays[date.getDay()];
+
+    let header = `${month}月${day}日`;
+
+    if (type === "today") {
+        header += "・今日";
+    } else if (type === "tomorrow") {
+        header += "・明日";
+    }
+
+    header += `・${weekday}`;
+
+    return header;
+}
+
+/**
+ * グループ内のタスクをソート
+ * @param {Array<Object>} tasks - タスクの配列
+ * @param {boolean} oldestFirst - 期限切れグループ用（古い順）
+ * @returns {Array<Object>} ソートされたタスク配列
+ */
+function sortTasksWithinGroup(tasks, oldestFirst = false) {
+    return tasks.sort((a, b) => {
+        const aHasTime = !!a.time;
+        const bHasTime = !!b.time;
+
+        // 時間ありを優先
+        if (aHasTime && !bHasTime) return -1;
+        if (!aHasTime && bHasTime) return 1;
+
+        // 両方時間ありの場合は時間順
+        if (aHasTime && bHasTime) {
+            return a.time.localeCompare(b.time);
+        }
+
+        // 期限切れグループの場合は日付順（古い順）
+        if (oldestFirst && a.dueDate && b.dueDate) {
+            return new Date(a.dueDate) - new Date(b.dueDate);
+        }
+
+        return 0;
+    });
+}
+
+/**
+ * タスクの日付表示をフォーマット（グループ化表示用）
+ * @param {Object} task - タスクオブジェクト
+ * @param {string} groupType - グループタイプ
+ * @returns {string} フォーマットされた日付文字列
+ */
+function formatTaskDateInGroup(task, groupType) {
+    // 未割当グループの場合
+    if (groupType === "noAssignee" || groupType === "noDate" || groupType === "noPriority") {
+        // 担当者未設定グループ: 日付と時間を表示
+        if (groupType === "noAssignee") {
+            if (!task.dueDate || task.date === "指定なし") return "期限なし";
+            return task.time ? `${task.date} ${task.time}` : task.date;
+        }
+        
+        // 期限未設定グループ: 担当者と優先度を表示（日付表示は不要）
+        if (groupType === "noDate") {
+            return ""; // 日付欄は非表示
+        }
+        
+        // 優先度未設定グループ: 日付と時間を表示
+        if (groupType === "noPriority") {
+            if (!task.dueDate || task.date === "指定なし") return "期限なし";
+            return task.time ? `${task.date} ${task.time}` : task.date;
+        }
+    }
+
+    if (!task.dueDate) return "指定なし";
+
+    const taskDate = new Date(task.dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // 期限切れグループの場合
+    if (groupType === "overdue") {
+        taskDate.setHours(0, 0, 0, 0);
+
+        // 昨日かどうかチェック
+        if (taskDate.getTime() === yesterday.getTime()) {
+            return task.time ? `昨日 ${task.time}` : "昨日";
+        }
+
+        // それ以外は M月D日 形式
+        const month = taskDate.getMonth() + 1;
+        const day = taskDate.getDate();
+        return task.time
+            ? `${month}月${day}日 ${task.time}`
+            : `${month}月${day}日`;
+    }
+
+    // その他のグループは時間のみ表示（時間がある場合）
+    return task.time || "";
+}
+
+/**
+ * 未割当タスクを優先順位でグループ化
+ * @param {Array<Object>} tasks - タスクの配列
+ * @returns {Array<Object>} グループ化されたタスク配列
+ */
+function groupUnassignedTasks(tasks) {
+    const groups = {
+        noAssignee: [],
+        noDate: [],
+        noPriority: [],
+    };
+
+    tasks.forEach((task) => {
+        if (task.assignee === "指定なし") {
+            // 担当者未設定
+            groups.noAssignee.push(task);
+        } else if (task.date === "指定なし") {
+            // 期限未設定
+            groups.noDate.push(task);
+        } else if (task.priority === "指定なし") {
+            // 優先度未設定
+            groups.noPriority.push(task);
+        }
+    });
+
+    // 各グループ内でソート
+    // 担当者未設定: 期限順（期限切れ→今日→明日→以降→期限なし）
+    groups.noAssignee = sortTasksByDate(groups.noAssignee);
+
+    // 期限未設定: 優先度順（高→中→低→なし）
+    groups.noDate = sortTasksByPriority(groups.noDate);
+
+    // 優先度未設定: 期限順
+    groups.noPriority = sortTasksByDate(groups.noPriority);
+
+    // 結果を配列に変換
+    const result = [];
+
+    if (groups.noAssignee.length > 0) {
+        result.push({
+            type: "noAssignee",
+            headerText: "担当者未設定",
+            tasks: groups.noAssignee,
+        });
+    }
+
+    if (groups.noDate.length > 0) {
+        result.push({
+            type: "noDate",
+            headerText: "期限未設定",
+            tasks: groups.noDate,
+        });
+    }
+
+    if (groups.noPriority.length > 0) {
+        result.push({
+            type: "noPriority",
+            headerText: "優先度未設定",
+            tasks: groups.noPriority,
+        });
+    }
+
+    return result;
+}
+
+/**
+ * タスクを日付順にソート
+ * @param {Array<Object>} tasks - タスクの配列
+ * @returns {Array<Object>} ソートされたタスク配列
+ */
+function sortTasksByDate(tasks) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return tasks.sort((a, b) => {
+        // 期限なしは最後
+        if (a.date === "指定なし" && b.date !== "指定なし") return 1;
+        if (a.date !== "指定なし" && b.date === "指定なし") return -1;
+        if (a.date === "指定なし" && b.date === "指定なし") return 0;
+
+        const aDate = new Date(a.dueDate);
+        const bDate = new Date(b.dueDate);
+
+        // 日付順
+        if (aDate.getTime() !== bDate.getTime()) {
+            return aDate - bDate;
+        }
+
+        // 同じ日付の場合は時間順
+        if (a.time && b.time) {
+            return a.time.localeCompare(b.time);
+        }
+        if (a.time && !b.time) return -1;
+        if (!a.time && b.time) return 1;
+
+        return 0;
+    });
+}
+
+/**
+ * タスクを優先度順にソート
+ * @param {Array<Object>} tasks - タスクの配列
+ * @returns {Array<Object>} ソートされたタスク配列
+ */
+function sortTasksByPriority(tasks) {
+    const priorityOrder = { 高: 1, 中: 2, 低: 3, 指定なし: 4 };
+
+    return tasks.sort((a, b) => {
+        const aPriority = priorityOrder[a.priority] || 4;
+        const bPriority = priorityOrder[b.priority] || 4;
+        return aPriority - bPriority;
+    });
+}
+
+/**
+ * タスク一覧を再描画する共通関数
+ * @param {Array<Object>} tasks - 表示するタスクの配列
+ * @param {string} filter - 現在のフィルター
+ */
+function renderTaskList(tasks, filter) {
+    const container = document.getElementById("taskListContainer");
+
+    if (tasks.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>タスクがありません</p>
+            </div>
+        `;
+        return;
+    }
+
+    const isCompleted = filter === "completed";
+
+    // self と member フィルタの場合は日付でグループ化
+    if (filter === "self" || filter === "member") {
+        const groupedTasks = groupTasksByDate(tasks);
+
+        container.innerHTML = groupedTasks
+            .map((group) => {
+                const header = `<div class="date-group-header">${group.headerText}</div>`;
+                const taskItems = group.tasks
+                    .map((task) =>
+                        renderTaskItem(task, isCompleted, group.type),
+                    )
+                    .join("");
+                return header + taskItems;
+            })
+            .join("");
+    } else if (filter === "unassigned") {
+        // unassigned フィルタは優先順位でグループ化
+        const groupedTasks = groupUnassignedTasks(tasks);
+
+        container.innerHTML = groupedTasks
+            .map((group) => {
+                const header = `<div class="date-group-header">${group.headerText}</div>`;
+                const taskItems = group.tasks
+                    .map((task) => renderTaskItem(task, isCompleted, group.type))
+                    .join("");
+                return header + taskItems;
+            })
+            .join("");
+    } else {
+        // completed は従来通りの表示
+        container.innerHTML = tasks
+            .map((task) => renderTaskItem(task, isCompleted))
+            .join("");
+    }
+}
+
+/**
  * Laravel APIから返されたDB形式のタスクをフロントエンド形式に変換
  * @param {Object} dbTask - データベース形式のタスクオブジェクト
  * @returns {Object} フロントエンド表示用に変換されたタスクオブジェクト
@@ -136,6 +522,7 @@ function transformTaskData(dbTask) {
         id: dbTask.id,
         aiTask: dbTask.ai_task,
         textInput: dbTask.text_input,
+        dueDate: dbTask.due_date,
         date: formatDate(dbTask.due_date),
         time: dbTask.due_time ? dbTask.due_time.substring(0, 5) : null,
         assignee: dbTask.assignee?.name || "指定なし",
@@ -689,27 +1076,16 @@ async function editTask() {
         // モーダルを閉じる
         closeModal("taskDetailModal");
 
-        // currentTaskListの該当タスクを更新
+        // currentTaskListの該当タスクを更新（APIレスポンスから最新データを取得）
         const editTaskIndex = currentTaskList.findIndex(
             (t) => t.id === currentTask.id,
         );
-        if (editTaskIndex !== -1) {
-            currentTaskList[editTaskIndex] = {
-                ...currentTaskList[editTaskIndex],
-                aiTask: currentTask.aiTask,
-                textInput: currentTask.textInput,
-                date: currentTask.date,
-                assignee: currentTask.assignee,
-                priority: currentTask.priority,
-            };
+        if (editTaskIndex !== -1 && saveResult.task) {
+            currentTaskList[editTaskIndex] = transformTaskData(saveResult.task);
         }
 
         // 画面を再描画
-        const container = document.getElementById("taskListContainer");
-        const isCompleted = currentFilter === "completed";
-        container.innerHTML = currentTaskList
-            .map((task) => renderTaskItem(task, isCompleted))
-            .join("");
+        renderTaskList(currentTaskList, currentFilter);
     } catch (error) {
         alert("エラー: " + error.message);
     } finally {
@@ -781,27 +1157,8 @@ async function executeDeleteTask() {
         // currentTaskListから削除したタスクを除外
         currentTaskList = currentTaskList.filter((t) => t.id !== deletedTaskId);
 
-        // タスク一覧を描画するコンテナを取得
-        const container = document.getElementById("taskListContainer");
-
-        // タスクがない場合
-        if (currentTaskList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-clipboard-list"></i>
-                    <p>タスクがありません</p>
-                </div>
-            `;
-            return;
-        }
-
-        // 現在のフィルター状態が 完了フィルターか判定
-        const isCompleted = currentFilter === "completed";
-
-        // タスク一覧HTMLを生成して、タスク表示エリアに表示
-        container.innerHTML = currentTaskList
-            .map((task) => renderTaskItem(task, isCompleted))
-            .join("");
+        // 画面を再描画
+        renderTaskList(currentTaskList, currentFilter);
     } catch (error) {
         alert("エラー: " + error.message);
     }
@@ -870,27 +1227,8 @@ async function executeCompleteTask() {
             );
         }
 
-        // タスク一覧を描画するコンテナを取得
-        const container = document.getElementById("taskListContainer");
-
-        // タスクがない場合
-        if (currentTaskList.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-clipboard-list"></i>
-                    <p>タスクがありません</p>
-                </div>
-            `;
-            return;
-        }
-
-        // 現在のフィルター状態が 完了フィルターか判定
-        const isCompleted = currentFilter === "completed";
-
-        // タスク一覧HTMLを生成して、タスク表示エリアに表示
-        container.innerHTML = currentTaskList
-            .map((task) => renderTaskItem(task, isCompleted))
-            .join("");
+        // 画面を再描画
+        renderTaskList(currentTaskList, currentFilter);
     } catch (error) {
         alert("エラー: " + error.message);
     }
@@ -948,27 +1286,8 @@ async function filterTasks(filter) {
         // - currentTaskListに保持する
         currentTaskList = transformedTasks;
 
-        // タスク一覧を描画するコンテナを取得
-        const container = document.getElementById("taskListContainer");
-
-        // タスクがない場合
-        if (transformedTasks.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-clipboard-list"></i>
-                    <p>タスクがありません</p>
-                </div>
-            `;
-            return;
-        }
-
-        // 完了タスク表示モードかどうかを判定
-        const isCompleted = filter === "completed";
-
-        // タスク一覧HTMLを生成して、タスク表示エリアに表示
-        container.innerHTML = transformedTasks
-            .map((task) => renderTaskItem(task, isCompleted))
-            .join("");
+        // タスク一覧を描画
+        renderTaskList(transformedTasks, filter);
     } catch (error) {
         console.error("タスクの取得に失敗しました:", error);
         showErrorMessage("タスクの読み込みに失敗しました");
@@ -979,14 +1298,21 @@ async function filterTasks(filter) {
  * タスクアイテムのHTMLを生成
  * @param {Object} task - タスクオブジェクト
  * @param {boolean} [isCompleted=false] - 完了タスク表示モードかどうか
+ * @param {string} [groupType=null] - グループタイプ（'overdue', 'today', 'tomorrow', 'future'）
  * @returns {string} タスクアイテムのHTML文字列
  */
-function renderTaskItem(task, isCompleted = false) {
+function renderTaskItem(task, isCompleted = false, groupType = null) {
     const completedClass = isCompleted ? "completed-task" : "";
     const checkboxContent = isCompleted ? '<i class="fas fa-check"></i>' : "";
 
-    // 時間がある場合は日付と時間を表示、ない場合は日付のみ
-    const dateTimeDisplay = task.time ? `${task.date} ${task.time}` : task.date;
+    // グループタイプがある場合はグループ用の日付表示
+    let dateTimeDisplay;
+    if (groupType) {
+        dateTimeDisplay = formatTaskDateInGroup(task, groupType);
+    } else {
+        // 従来通りの表示（unassigned, completed用）
+        dateTimeDisplay = task.time ? `${task.date} ${task.time}` : task.date;
+    }
 
     return `
         <div class="task-item ${completedClass}" onclick="openTaskDetailModal(${task.id})">
@@ -996,10 +1322,16 @@ function renderTaskItem(task, isCompleted = false) {
                 <div class="task-title">${task.aiTask}</div>
             </div>
             <div class="task-meta">
+                ${
+                    dateTimeDisplay
+                        ? `
                 <div class="task-meta-item">
                     <i class="far fa-calendar"></i>
                     <span>${dateTimeDisplay}</span>
                 </div>
+                `
+                        : ""
+                }
                 <div class="task-meta-item">
                     <i class="far fa-user"></i>
                     <span>${task.assignee}</span>

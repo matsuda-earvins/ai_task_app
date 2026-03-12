@@ -97,6 +97,23 @@ body {
     color: #e74c3c;
 }
 
+
+/* 日付グループヘッダー（グループ化表示用） */
+.date-group-header {
+    padding: 12px 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    margin-top: 8px;
+}
+
+
+.date-group-header:first-child {
+    margin-top: 0;
+}
+
+
 .task-group-count {
     background-color: #e8f4ff;
     color: #3498db;
