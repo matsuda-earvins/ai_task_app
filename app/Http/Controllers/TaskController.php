@@ -239,6 +239,7 @@ class TaskController extends Controller
             'ai_task' => 'required|string|max:500',
             'text_input' => 'required|string|max:500',
             'date' => 'nullable|string',        // "2026年3月1日"または"指定なし"
+            'time' => 'nullable|string',
             'assignee' => 'nullable|string', // "松田"または"指定なし"
             'priority' => 'nullable|string', // "高"または"指定なし"
         ]);
@@ -249,6 +250,7 @@ class TaskController extends Controller
 
             // 3. データ変換 (日付, 担当者, 優先度)
             $dueDate = $this->convertDateStringToDate($validated['date'] ?? null);
+            $dueTime = $this->convertTimeStringToTime($validated['time'] ?? null);
             $assigneeId = $this->findUserIdByName($validated['assignee'] ?? null);
             $priorityId = $this->findPriorityIdByName($validated['priority'] ?? null);
 
@@ -257,6 +259,7 @@ class TaskController extends Controller
                 'ai_task' => $validated['ai_task'],
                 'text_input' => $validated['text_input'],
                 'due_date' => $dueDate,
+                'due_time' => $dueTime,
                 'assignee_id' => $assigneeId,
                 'priority_id' => $priorityId,
                 'created_by_id' => $currentUser->id, // 作成者を記録
@@ -290,6 +293,7 @@ class TaskController extends Controller
             'ai_task' => 'required|string|max:500',
             'text_input' => 'required|string|max:500',
             'date' => 'nullable|string',
+            'time' => 'nullable|string',
             'assignee' => 'nullable|string',
             'priority' => 'nullable|string',
         ]);
@@ -303,6 +307,7 @@ class TaskController extends Controller
                 'ai_task' => $validated['ai_task'],
                 'text_input' => $validated['text_input'],
                 'due_date' => $this->convertDateStringToDate($validated['date'] ?? null),
+                'due_time' => $this->convertTimeStringToTime($validated['time'] ?? null),
                 'assignee_id' => $this->findUserIdByName($validated['assignee'] ?? null),
                 'priority_id' => $this->findPriorityIdByName($validated['priority'] ?? null),
             ]);
@@ -409,6 +414,28 @@ class TaskController extends Controller
 
         return null;
     }
+
+    // 時間変換 (HH:MM → HH:MM:SS)
+    private function convertTimeStringToTime($timeString)
+    {
+        // null または空文字の場合
+        if (empty($timeString)) {
+            return null;
+        }
+
+        // "HH:MM" 形式の場合、秒を追加して "HH:MM:SS" にする
+        if (preg_match('/^(\d{2}):(\d{2})$/', $timeString, $matches)) {
+            return sprintf('%02d:%02d:00', $matches[1], $matches[2]);
+        }
+
+        // すでに "HH:MM:SS" 形式の場合はそのまま返す
+        if (preg_match('/^(\d{2}):(\d{2}):(\d{2})$/', $timeString)) {
+            return $timeString;
+        }
+
+        return null;
+    }
+
 
     // 担当者名 → User ID 変換
     private function findUserIdByName($name)
