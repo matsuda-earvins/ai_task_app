@@ -917,9 +917,6 @@ function getPriorityClass(priority) {
  * @async
  */
 async function filterTasks(filter) {
-    // 同じフィルタで、かつ既にデータがある場合のみスキップ
-    if (currentFilter === filter && currentTaskList.length > 0) return;
-
     // 現在のフィルタ変数を更新
     currentFilter = filter;
 
