@@ -1385,10 +1385,9 @@ function changeMonth(delta) {
  */
 function saveDateSelection() {
     if (selectedDate) {
-        const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth() + 1;
         const day = selectedDate.getDate();
-        const formatted = `${month}月${day}日`;
+        let formatted = `${month}月${day}日`;
 
         // 時間が選択されている場合は追加
         if (selectedTime) {
