@@ -159,8 +159,11 @@ function groupTasksByDate(tasks) {
             // 明日
             groups.tomorrow.push(task);
         } else {
-            // 以降の日付
-            const dateKey = taskDate.toISOString().split("T")[0]; // YYYY-MM-DD形式の文字列
+            // 以降の日付 (YYYY-MM-DD形式の文字列)
+            // const dateKey = taskDate.toISOString().split("T")[0]; // UTC基準になる可能性があるため使用しない
+            // ローカル時間で YYYY-MM-DD を作成する
+            const dateKey = `${taskDate.getFullYear()}-${String(taskDate.getMonth() + 1).padStart(2, "0")}-${String(taskDate.getDate()).padStart(2, "0")}`;
+
             // その日付の箱がなければ作って、そこにタスクを入れる
             if (!groups.future[dateKey]) {
                 groups.future[dateKey] = [];
@@ -363,6 +366,7 @@ function groupUnassignedTasks(tasks) {
     };
 
     tasks.forEach((task) => {
+        console.log("dueDate:", task.dueDate);
         if (task.assignee === "指定なし") {
             // 担当者未設定
             groups.noAssignee.push(task);
