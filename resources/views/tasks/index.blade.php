@@ -313,5 +313,7 @@
             </div>
         </div>
     </div>
+    @push('scripts')
+        <script src="{{ asset('js/tasks.js') }}"></script>
+    @endpush
 @endsection
-<script src="{{ asset('js/tasks.js') }}"></script>
