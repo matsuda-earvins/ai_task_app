@@ -1764,6 +1764,8 @@ function renderCompletedInfo(task, checkboxContent, priorityClass) {
  * メンバー選択モーダルを開く
  */
 function openMemberSelect() {
+    const matched = MEMBERS.find((m) => m.name === currentTask.assignee);
+    selectedMember = matched ? matched.id : null;
     renderMemberList();
     openModal("memberSelectModal");
 }
