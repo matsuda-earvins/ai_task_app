@@ -1810,12 +1810,15 @@ function selectMemberInMemberSelectModal(memberId) {
  * 選択中のメンバーをタスクの担当者フィールドに適用
  */
 function applyMemberInMemberSelectModal() {
-    console.log('selectedMember:', selectedMember)
     if (selectedMember) {
         const member = MEMBERS.find((m) => m.id === selectedMember);
         if (member) {
+            currentTask.assignee = member.name;
             document.getElementById("detailAssignee").textContent = member.name;
         }
+    } else {
+        currentTask.assignee = "指定なし";
+        document.getElementById("detailAssignee").textContent = "指定なし";
     }
     closeModal("memberSelectModal");
 }
