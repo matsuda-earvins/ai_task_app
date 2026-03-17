@@ -6,9 +6,6 @@
     <!-- 設定画面 -->
     <div class="settings-screen active">
         <div class="settings-header">
-            <a href="{{ route('tasks.index') }}" class="back-btn" id="backToMainBtn">
-                <i class="fas fa-arrow-left"></i>
-            </a>
             <h1>設定</h1>
         </div>
 
@@ -54,9 +51,7 @@
                 </div>
             </div>
 
-            <!-- ログアウト -->
             <div class="settings-section">
-                {{-- CSRF対策のため、ログアウトはPOSTメソッドで送信 --}}
                 <form method="POST" action="{{ route('logout') }}" id="logoutForm">
                     @csrf
                     <div class="settings-item" onclick="document.getElementById('logoutForm').submit();">
@@ -74,22 +69,18 @@
                 <div class="app-version">VoiceTask v1.0.0</div>
                 <div class="app-description">音声でタスクを管理</div>
             </div>
-
-            <!-- 音声入力ボタン（設定画面用） -->
-            <button class="voice-input-btn" id="voiceInputBtnSettings">
-                <i class="fas fa-plus"></i>
-            </button>
-
-            <!-- ボトムナビ（設定画面用） -->
-            <div class="bottom-nav">
-                <a href="{{ route('tasks.index') }}" class="nav-item" id="taskNavBtnSettings">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>タスク</span>
-                </a>
-                <a href="{{ route('tasks.settings') }}" class="nav-item active" id="settingsNavBtnActive">
-                    <i class="fas fa-cog"></i>
-                    <span>設定</span>
-                </a>
-            </div>
         </div>
-    @endsection
+
+        <!-- ボトムナビ -->
+        <div class="bottom-nav">
+            <a href="{{ route('tasks.index') }}" class="nav-item" id="taskNavBtnSettings">
+                <i class="fas fa-clipboard-list"></i>
+                <span>タスク</span>
+            </a>
+            <a href="{{ route('tasks.settings') }}" class="nav-item active" id="settingsNavBtnActive">
+                <i class="fas fa-cog"></i>
+                <span>設定</span>
+            </a>
+        </div>
+    </div>
+@endsection
