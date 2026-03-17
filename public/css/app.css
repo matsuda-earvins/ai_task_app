@@ -778,9 +778,14 @@ body {
 .task-checkbox.completing {
     background-color: #27ae60;
     border-color: #27ae60;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .task-checkbox.completing i {
+    font-size: 12px;
     animation: checkmarkAppear 0.3s ease-out forwards;
 }
 
