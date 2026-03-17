@@ -669,10 +669,24 @@ function setupEventListeners() {
         deleteTaskBtn.addEventListener("click", deleteTask);
     }
 
-    // ユーザーがフィルターをクリックした際の処理
     document.querySelectorAll(".filter-tab").forEach((tab) => {
         tab.addEventListener("click", (e) => {
             const filter = e.target.dataset.filter;
+
+            // 絞り込みフィルターパネルのセレクトをリセット
+            const priorityFilter = document.getElementById("priorityFilter");
+            const dueFilter = document.getElementById("dueFilter");
+            if (priorityFilter) priorityFilter.value = "";
+            if (dueFilter) dueFilter.value = "";
+            document
+                .querySelectorAll(".filter-select")
+                .forEach((el) => el.classList.remove("active"));
+
+            // タブに応じて担当者ドロップダウンを更新
+            updateAssigneeFilterForTab(filter);
+            updateFilterToggleBtnState();
+
+            // フィルタ条件に応じてタスクを追加
             filterTasks(filter);
         });
     });
