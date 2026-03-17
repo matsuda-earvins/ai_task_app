@@ -648,9 +648,12 @@ function setupEventListeners() {
 
     document.querySelectorAll(".priority-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
+            const isActive = e.target.classList.contains("active");
             document.querySelectorAll(".priority-btn").forEach((b) => {
                 b.classList.remove("active", "high", "medium", "low");
             });
+            // すでにアクティブだった場合は解除（指定なしに戻す）
+            if (isActive) return;
             const priority = e.target.dataset.priority;
             e.target.classList.add("active");
             if (priority === "高") e.target.classList.add("high");
