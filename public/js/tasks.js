@@ -2,6 +2,8 @@
 // 0. 設定（定数）
 //==============================================================================
 
+const { default: laravel } = require("laravel-vite-plugin");
+
 /** タスク担当者として選択可能なメンバーリスト */
 let MEMBERS = window.MEMBERS || [];
 /** 現在のログインユーザー名 */
@@ -1645,11 +1647,6 @@ async function filterTasks(filter) {
     // 現在のフィルタ変数を更新
     currentFilter = filter;
 
-    // // URLを更新（リロード時に状態を保持するため）
-    // const url = new URL(window.location);
-    // url.searchParams.set("filter", filter); // URLのクエリパラメータfilterに変数のfilterをセットする
-    // window.history.pushState({}, "", url); // ブラウザを再読み込みせず、表示中のURLだけ書き換える
-
     // タブのactive状態を更新（画面の見た目)
     document.querySelectorAll(".filter-tab").forEach((tab) => {
         tab.classList.remove("active");
@@ -1660,7 +1657,28 @@ async function filterTasks(filter) {
 
     try {
         // タスク一覧取得APIにリクエストを送信（フィルター条件付き）
-        const response = await fetch(`/api/tasks?filter=${filter}`);
+        // const response = await fetch(`/api/tasks?filter=${filter}`);
+        const assigneeFilter = document.getElementById("assigneeFilter");
+        const assigneeName = assigneeFilter?.disabled
+            ? CURRENT_USER
+            : assigneeFilter?.value || "";
+        const priorityLabel =
+            document.getElementById("priorityFilter")?.value || "";
+        const due = document.getElementById("dueFilter")?.value || "";
+
+        const assigneeId = assigneeName
+            ? MEMBERS.find((m) => m.name === assigneeName)?.id || ""
+            : "";
+        const priorityMap = { none: 0, low: 1, medium: 2, high: 3 };
+        const priorityId =
+            priorityLabel !== "" ? priorityMap[priorityLabel] || "" : "";
+
+        const params = new URLSearchParams({ filter });
+        if (assigneeId) params.append("assignee_id", assigneeId);
+        if (priorityId !== "") params.append("priority_id", priorityId);
+        if (due) params.append("due", due);
+
+        const response = await fetch(`/api/tasks?${params.toString()}`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -2148,4 +2166,78 @@ function clearDateSelection() {
         detailDate.dataset.time = "";
     }
     closeModal("dateSelectModal");
+}
+
+//==============================================================================
+// 9. 絞り込みフィルター
+//==============================================================================
+
+/**
+ * フィルターパネルの開閉
+ */
+function toggleFilter() {
+    const panel = document.getElementById("filterPanel");
+    panel.classList.toggle("open");
+}
+
+/**
+ * タブに応じて担当者ドロップダウンを更新 'self'は ログインユーザーを固定
+ */
+function updateAssigneeFilterForTab(filter) {
+    const assigneeFilter = document.getElementById("assigneeFilter");
+    if (!assigneeFilter) return;
+
+    assigneeFilter.innerHTML = "";
+    assigneeFilter.classList.remove("active");
+
+    if (filter === "self") {
+        const opt = document.createElement("option");
+        opt.value = CURRENT_USER;
+        opt.textContent = CURRENT_USER;
+        assigneeFilter.appendChild(opt);
+        assigneeFilter.disabled = true;
+    } else if (filter === "member") {
+        assigneeFilter.disabled = false;
+        const members = MEMBERS.filter((m) => m.name !== CURRENT_USER);
+        [
+            { value: "", label: "担当者" },
+            ...members.map((m) => ({ value: m.name, label: m.name })),
+        ].forEach(({ value, label }) => {
+            const opt = document.createElement("option");
+            opt.value = value;
+            opt.textContent = label;
+            assigneeFilter.appendChild(opt);
+        });
+    } else {
+        assigneeFilter.disabled = false;
+        [
+            { value: "", label: "担当者" },
+            ...MEMBERS.map((m) => ({ value: m.name, label: m.name })),
+        ].forEach(({ value, label }) => {
+            const opt = document.createElement("option");
+            opt.value = value;
+            opt.textContent = label;
+            assigneeFilter.appendChild(opt);
+        });
+    }
+}
+
+/**
+ * 絞り込みボタンの状態を更新（絞り込み中ラベルの切り替え）
+ */
+function updateFilterToggleBtnState() {
+    const assigneeFilter = document.getElementById("assigneeFilter");
+    const priority = document.getElementById("priorityFilter").value;
+    const due = document.getElementById("dueFilter").value;
+    const hasFilter =
+        (!assigneeFilter.disabled && assigneeFilter.value !== "") ||
+        priority !== "" ||
+        due !== "";
+
+    document
+        .getElementById("filterToggleBtn")
+        .classList.toggle("has-filter", hasFilter);
+    document.getElementById("filterBtnLabel").textContent = hasFilter
+        ? "絞り込み中"
+        : "絞り込み";
 }
