@@ -323,7 +323,7 @@
                     <span id="timeBtnText">時間を選択</span>
                 </button>
                 <button class="clear-date-btn" id="clearDateBtn">クリア</button>
-                <button class="save-date-btn" id="saveDateBtn">保存</button>
+                <button class="save-date-btn" id="saveDateBtn">適用</button>
             </div>
         </div>
     </div>
