@@ -89,15 +89,15 @@ class TaskController extends Controller
                 case 'today':
                     $query->whereDate('due_date', $today);
                     break;
-                // 明日まで
+                // 明日
                 case 'tomorrow':
-                    $query->whereDate('due_date', '<=', $tomorrow)->whereNotNull('due_date');
+                    $query->whereDate('due_date', $tomorrow);
                     break;
-                // 今週中
+                // 今週
                 case 'this_week':
                     $query->whereDate('due_date', '<=', $thisWeekEnd)->whereNotNull('due_date');
                     break;
-                // 来週中
+                // 来週
                 case 'next_week':
                     $query->whereDate('due_date', '>', $thisWeekEnd)
                         ->whereDate('due_date', '<=', $nextWeekEnd);

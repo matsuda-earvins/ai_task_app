@@ -48,9 +48,9 @@
                 <select class="search-filter-select" id="searchDueFilter">
                     <option value="">期限</option>
                     <option value="today">今日</option>
-                    <option value="tomorrow">明日まで</option>
-                    <option value="this_week">今週中</option>
-                    <option value="next_week">来週中</option>
+                    <option value="tomorrow">明日</option>
+                    <option value="this_week">今週</option>
+                    <option value="next_week">来週</option>
                     <option value="overdue">期限切れ</option>
                     <option value="none">期限なし</option>
                 </select>
