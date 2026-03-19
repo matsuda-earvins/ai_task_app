@@ -1971,13 +1971,17 @@ function applyMemberInMemberSelectModal() {
 
 /**
  * 日付選択モーダルを開く
- * 初期表示は今日の日付を選択状態にする
+ * 初期表示は既存の日付があればその日付、なければ今日
  */
 function openDateSelectModal() {
     const today = new Date();
-    selectedDate = today;
-    currentYear = today.getFullYear();
-    currentMonth = today.getMonth();
+
+    const existingDueDate = currentTask.dueDate
+        ? new Date(currentTask.dueDate)
+        : null;
+    selectedDate = existingDueDate || today;
+    currentYear = selectedDate.getFullYear();
+    currentMonth = selectedDate.getMonth();
 
     const detailDate = document.getElementById("detailDate");
     const existingTime = detailDate?.dataset.time || null;
