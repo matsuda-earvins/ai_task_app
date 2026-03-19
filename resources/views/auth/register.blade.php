@@ -43,7 +43,7 @@
                         <i class="fas fa-envelope"></i>
                         <span>メールアドレス</span>
                     </label>
-                    <input type="email" id="email" name="email" class="auth-input" value="{{ old('name') }}"
+                    <input type="email" id="email" name="email" class="auth-input" value="{{ old('email') }}"
                         placeholder="example@example.com" required>
                 </div>
 
