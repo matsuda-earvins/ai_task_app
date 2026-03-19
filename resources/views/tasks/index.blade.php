@@ -123,7 +123,7 @@
 
         <!-- 音声入力ボタン -->
         <button class="voice-input-btn" id="voiceInputBtn">
-            <i class="fas fa-microphone"></i>
+            <i class="fas fa-plus"></i>
         </button>
 
         <!-- ボトムナビ -->
