@@ -225,8 +225,8 @@
                 <!-- メンバーリストはJSで生成 -->
             </div>
             <div class="member-select-actions">
-                <button class="clear-btn" id="clearMemberBtn">クリア</button>
-                <button class="apply-btn" id="applyMemberBtn">適用する</button>
+                <button class="clear-btn" id="clearMemberBtn">指定なし</button>
+                <button class="apply-btn" id="applyMemberBtn">適用</button>
             </div>
         </div>
     </div>

@@ -642,7 +642,7 @@ function setupEventListeners() {
     if (clearMemberBtn) {
         clearMemberBtn.addEventListener("click", () => {
             selectedMember = null;
-            renderMemberList();
+            applyMemberInMemberSelectModal();
         });
     }
 
@@ -779,7 +779,9 @@ function setupEventListeners() {
         });
     }
 
-    const deleteConfirmCancelBtn = document.getElementById("deleteConfirmCancelBtn");
+    const deleteConfirmCancelBtn = document.getElementById(
+        "deleteConfirmCancelBtn",
+    );
     if (deleteConfirmCancelBtn) {
         deleteConfirmCancelBtn.addEventListener("click", closeDeleteConfirm);
     }
@@ -1159,7 +1161,10 @@ async function createNewTask() {
         }
 
         // 日付なしの場合は時間も無効にする
-        currentTask.time = (currentTask.date && currentTask.date !== "指定なし") ? manualTime : null;
+        currentTask.time =
+            currentTask.date && currentTask.date !== "指定なし"
+                ? manualTime
+                : null;
 
         const manualAssignee =
             document.getElementById("detailAssignee").textContent;
@@ -1249,7 +1254,10 @@ async function editTask() {
 
         currentTask.date = manualDate || "指定なし";
         // 日付なしの場合は時間も無効にする
-        currentTask.time = (currentTask.date && currentTask.date !== "指定なし") ? manualTime : null;
+        currentTask.time =
+            currentTask.date && currentTask.date !== "指定なし"
+                ? manualTime
+                : null;
 
         const manualAssignee =
             document.getElementById("detailAssignee").textContent;
@@ -1457,7 +1465,8 @@ async function completeTask() {
 
     currentTask.date = manualDate || "指定なし";
     // 日付なしの場合は時間も無効にする
-    currentTask.time = (currentTask.date && currentTask.date !== "指定なし") ? manualTime : null;
+    currentTask.time =
+        currentTask.date && currentTask.date !== "指定なし" ? manualTime : null;
 
     const manualAssignee =
         document.getElementById("detailAssignee").textContent;
@@ -1778,22 +1787,24 @@ function renderTaskItem(task, isCompleted = false, groupType = null) {
 
     // 期限切れ判定（完了済みは除く）
     // 日付が過去、または今日かつ時刻が設定されていて現在時刻を過ぎている場合
-    const isOverdue = !isCompleted && (() => {
-        if (!task.dueDate) return false;
-        const now = new Date();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const taskDate = new Date(task.dueDate);
-        taskDate.setHours(0, 0, 0, 0);
-        if (taskDate < today) return true;
-        if (taskDate.getTime() === today.getTime() && task.time) {
-            const [hours, minutes] = task.time.split(":").map(Number);
-            const taskDateTime = new Date(task.dueDate);
-            taskDateTime.setHours(hours, minutes, 0, 0);
-            return taskDateTime < now;
-        }
-        return false;
-    })();
+    const isOverdue =
+        !isCompleted &&
+        (() => {
+            if (!task.dueDate) return false;
+            const now = new Date();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const taskDate = new Date(task.dueDate);
+            taskDate.setHours(0, 0, 0, 0);
+            if (taskDate < today) return true;
+            if (taskDate.getTime() === today.getTime() && task.time) {
+                const [hours, minutes] = task.time.split(":").map(Number);
+                const taskDateTime = new Date(task.dueDate);
+                taskDateTime.setHours(hours, minutes, 0, 0);
+                return taskDateTime < now;
+            }
+            return false;
+        })();
     const overdueDateClass = isOverdue ? "overdue-date" : "";
 
     return `
