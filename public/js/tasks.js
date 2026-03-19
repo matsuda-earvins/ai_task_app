@@ -932,8 +932,9 @@ function openNewTaskModal() {
     // 編集可能モードに設定（新規作成時）
     setTaskDetailEditable(true);
 
-    // 完了ボタンを非表示にする（新規作成時）
+    // 完了ボタン・削除ボタンを非表示にする（新規作成時）
     document.getElementById("completeTaskBtn").style.display = "none";
+    document.getElementById("deleteTaskBtn").style.display = "none";
 
     openModal("taskDetailModal");
 }
@@ -971,6 +972,9 @@ function openTaskDetailModal(taskId) {
             if (task.priority === "低") btn.classList.add("low");
         }
     });
+
+    // 削除ボタンを表示（既存タスク）
+    document.getElementById("deleteTaskBtn").style.display = "";
 
     // モーダルを開く
     openModal("taskDetailModal");
