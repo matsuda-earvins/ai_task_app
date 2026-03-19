@@ -633,7 +633,6 @@ function setupEventListeners() {
     const dateField = document.getElementById("dateField");
     if (dateField) {
         dateField.addEventListener("click", () => {
-            if (isModalLocked) return;
             openDateSelectModal();
         });
     }
@@ -1114,18 +1113,6 @@ function setModalLocked(locked) {
     const textInputField = document.getElementById("textInputField");
     textInputField.disabled = locked;
 
-    // 期限欄
-    const dateField = document.getElementById("dateField");
-    dateField.disabled = locked;
-
-    // 担当者欄
-    const assigneeField = document.getElementById("assigneeField");
-    assigneeField.disabled = locked;
-
-    // 優先度欄
-    const priorityField = document.getElementById("priorityField");
-    priorityField.disabled = locked;
-
     // 完了にするボタン
     const completeTaskBtn = document.getElementById("completeTaskBtn");
     completeTaskBtn.disabled = locked;
@@ -1133,6 +1120,13 @@ function setModalLocked(locked) {
     // 保存ボタン
     const saveTaskBtn = document.getElementById("saveTaskBtn");
     saveTaskBtn.disabled = locked;
+
+    // divフィールドではCSSで操作を無効化
+    const fields = ["dateField", "assigneeField", "priorityField"];
+    fields.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.style.pointerEvents = locked ? "none" : "";
+    });
 }
 
 /**
