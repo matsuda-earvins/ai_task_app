@@ -1469,19 +1469,22 @@ function handleCheckboxClick(event, taskId) {
 
     currentTask = task;
 
+    const taskElement = event.target.closest(".task-item");
+    const checkboxElement = event.target.closest(".task-checkbox");
+
     if (isOtherMemberTask(task)) {
         const assigneeName = task.assignee;
         showAlert(
             "他メンバーのタスクです",
             `このタスクは<strong>${assigneeName}</strong>さんに割り当てられています。完了にしてもよろしいですか?`,
             "完了にする",
-            () => executeCompleteTaskWithAnimation(taskId),
+            () => executeCompleteTaskWithAnimation(taskId, taskElement, checkboxElement),
             "fas fa-user",
         );
         return;
     }
 
-    executeCompleteTaskWithAnimation(taskId);
+    executeCompleteTaskWithAnimation(taskId, taskElement, checkboxElement);
 }
 
 /**
@@ -1574,11 +1577,8 @@ async function completeTask() {
  * リスト画面のチェックボックスクリック時に使用
  * @param {number} taskId - タスクID
  */
-async function executeCompleteTaskWithAnimation(taskId) {
+async function executeCompleteTaskWithAnimation(taskId, taskElement, checkboxElement) {
     if (!currentTask) return;
-
-    const taskElement = event.target.closest(".task-item");
-    const checkboxElement = event.target.closest(".task-checkbox");
 
     if (!taskElement || !checkboxElement) return;
 
