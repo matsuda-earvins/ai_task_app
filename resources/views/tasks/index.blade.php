@@ -243,19 +243,15 @@
             <!-- ショートカットボタン -->
             <div class="date-shortcuts">
                 <button class="shortcut-btn" id="todayBtn">
-                    <i class="fas fa-sun"></i>
                     <span>今日</span>
                 </button>
                 <button class="shortcut-btn" id="tomorrowBtn">
-                    <i class="fas fa-arrow-up"></i>
                     <span>明日</span>
                 </button>
                 <button class="shortcut-btn" id="weekendBtn">
-                    <i class="fas fa-car"></i>
                     <span>週末</span>
                 </button>
                 <button class="shortcut-btn" id="nextWeekBtn">
-                    <i class="fas fa-calendar"></i>
                     <span>来週</span>
                 </button>
             </div>
