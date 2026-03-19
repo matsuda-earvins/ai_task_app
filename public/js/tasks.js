@@ -71,6 +71,12 @@ let currentMonth = new Date().getMonth();
  */
 let alertCallback = null;
 
+/**
+ * モーダルがロックされているかどうか
+ * @type {boolean}
+ */
+let isModalLocked = false;
+
 //==============================================================================
 // 2. ユーティリティ（共通関数）
 //==============================================================================
@@ -619,6 +625,7 @@ function setupEventListeners() {
     const assigneeField = document.getElementById("assigneeField");
     if (assigneeField) {
         assigneeField.addEventListener("click", () => {
+            if (isModalLocked) return;
             openMemberSelect();
         });
     }
@@ -626,6 +633,7 @@ function setupEventListeners() {
     const dateField = document.getElementById("dateField");
     if (dateField) {
         dateField.addEventListener("click", () => {
+            if (isModalLocked) return;
             openDateSelectModal();
         });
     }
@@ -1088,6 +1096,46 @@ function setTaskDetailEditable(editable) {
 }
 
 /**
+ * モーダルをロックする
+ * @param {boolean} locked - true: ロック, false: ロック解除
+ */
+function setModalLocked(locked) {
+    // ✕ボタン
+    const closeTaskDetailModal = document.getElementById(
+        "closeTaskDetailModal",
+    );
+    closeTaskDetailModal.disabled = locked;
+
+    // 削除ボタン
+    const deleteTaskBtn = document.getElementById("deleteTaskBtn");
+    deleteTaskBtn.disabled = locked;
+
+    // タスク欄（テキスト入力欄）
+    const textInputField = document.getElementById("textInputField");
+    textInputField.disabled = locked;
+
+    // 期限欄
+    const dateField = document.getElementById("dateField");
+    dateField.disabled = locked;
+
+    // 担当者欄
+    const assigneeField = document.getElementById("assigneeField");
+    assigneeField.disabled = locked;
+
+    // 優先度欄
+    const priorityField = document.getElementById("priorityField");
+    priorityField.disabled = locked;
+
+    // 完了にするボタン
+    const completeTaskBtn = document.getElementById("completeTaskBtn");
+    completeTaskBtn.disabled = locked;
+
+    // 保存ボタン
+    const saveTaskBtn = document.getElementById("saveTaskBtn");
+    saveTaskBtn.disabled = locked;
+}
+
+/**
  * 新規タスクを作成（AI解析あり）
  * 1. ユーザー入力をAI解析
  * 2. 解析結果とユーザーの手動入力をマージ
@@ -1103,9 +1151,9 @@ async function createNewTask() {
         return;
     }
 
+    setModalLocked(true);
     // ボタンを「解析中...」に変更
     const saveBtn = document.getElementById("saveTaskBtn");
-    saveBtn.disabled = true;
     saveBtn.textContent = "解析中...";
 
     try {
@@ -1205,7 +1253,7 @@ async function createNewTask() {
     } catch (error) {
         alert("エラー: " + error.message);
     } finally {
-        saveBtn.disabled = false;
+        setModalLocked(false);
         saveBtn.textContent = "保存";
     }
 }
@@ -1231,7 +1279,7 @@ async function editTask() {
         return;
     }
 
-    saveBtn.disabled = true;
+    setModalLocked(true);
     saveBtn.textContent = "保存中...";
     try {
         // currentTaskを更新
@@ -1327,7 +1375,7 @@ async function editTask() {
     } catch (error) {
         alert("エラー: " + error.message);
     } finally {
-        saveBtn.disabled = false;
+        setModalLocked(false);
         saveBtn.textContent = "保存";
     }
 }
