@@ -5,7 +5,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\AuthController;
 
 // ゲスト用ルート（ログインしていない人だけアクセス可能）
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', 'no-cache'])->group(function () {
     // ログイン画面の表示
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 
@@ -35,7 +35,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
 // 認証が必要なルート（ログインしている人だけアクセス可能）
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'no-cache'])->group(function () {
     // タスク画面
     Route::get('/', [TaskController::class, 'index'])->name('tasks.index');
 
