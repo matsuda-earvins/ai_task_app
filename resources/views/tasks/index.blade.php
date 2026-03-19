@@ -173,7 +173,6 @@
                         <span>タスク</span>
                     </div>
                     <input type="text" id="textInputField" class="detail-field-input" value="" placeholder="タスクを入力してください" />
-                    <div id="detailCheckbox" style="display:none;"></div>
                 </div>
 
                 <div class="detail-field" id="dateField">
@@ -206,6 +205,9 @@
             </div>
 
             <div class="task-detail-actions">
+                <button class="uncomplete-btn" id="uncompleteTaskBtn" style="display:none;">
+                    <i class="fas fa-check-circle"></i> 未完了に戻す
+                </button>
                 <button class="complete-btn" id="completeTaskBtn">完了にする</button>
                 <button class="save-btn" id="saveTaskBtn">保存</button>
             </div>

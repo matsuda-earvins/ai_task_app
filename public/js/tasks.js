@@ -995,7 +995,6 @@ function openTaskDetailModal(taskId) {
  */
 function setTaskDetailEditable(editable) {
     const textInputField = document.getElementById("textInputField");
-    const detailCheckbox = document.getElementById("detailCheckbox");
     const taskDetailTitle = document.querySelector(".task-detail-title");
     const dateField = document.getElementById("dateField");
     const assigneeField = document.getElementById("assigneeField");
@@ -1003,6 +1002,7 @@ function setTaskDetailEditable(editable) {
     const priorityButtons = document.querySelectorAll(".priority-btn");
     const completeBtn = document.getElementById("completeTaskBtn");
     const saveBtn = document.getElementById("saveTaskBtn");
+    const uncompleteBtn = document.getElementById("uncompleteTaskBtn");
 
     if (editable) {
         // 編集可能モード
@@ -1013,15 +1013,6 @@ function setTaskDetailEditable(editable) {
 
         if (taskDetailTitle) {
             taskDetailTitle.classList.remove("completed-style");
-        }
-
-        if (detailCheckbox) {
-            detailCheckbox.innerHTML = "";
-            detailCheckbox.classList.remove("clickable");
-            detailCheckbox.style.backgroundColor = "";
-            detailCheckbox.style.borderColor = "";
-            detailCheckbox.style.color = "";
-            detailCheckbox.onclick = null;
         }
 
         if (dateField) {
@@ -1050,6 +1041,10 @@ function setTaskDetailEditable(editable) {
             saveBtn.style.display = "";
             saveBtn.disabled = false;
         }
+
+        if (uncompleteBtn) {
+            uncompleteBtn.style.display = "none";
+        }
     } else {
         // 編集不可モード（完了済み）
         if (textInputField) {
@@ -1058,18 +1053,6 @@ function setTaskDetailEditable(editable) {
 
         if (taskDetailTitle) {
             taskDetailTitle.classList.add("completed-style");
-        }
-
-        if (detailCheckbox) {
-            detailCheckbox.innerHTML = '<i class="fas fa-check"></i>';
-            detailCheckbox.classList.add("clickable");
-            detailCheckbox.style.backgroundColor = "#27ae60";
-            detailCheckbox.style.borderColor = "#27ae60";
-            detailCheckbox.style.color = "#fff";
-            detailCheckbox.style.display = "flex";
-            detailCheckbox.style.alignItems = "center";
-            detailCheckbox.style.justifyContent = "center";
-            detailCheckbox.onclick = uncompleteTask;
         }
 
         if (dateField) {
@@ -1095,6 +1078,11 @@ function setTaskDetailEditable(editable) {
 
         if (saveBtn) {
             saveBtn.style.display = "none";
+        }
+
+        if (uncompleteBtn) {
+            uncompleteBtn.style.display = "";
+            uncompleteBtn.onclick = uncompleteTask;
         }
     }
 }

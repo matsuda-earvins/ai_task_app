@@ -520,6 +520,27 @@ body {
     background-color: #c0392b;
 }
 
+.uncomplete-btn {
+    flex: 1;
+    padding: 16px;
+    background-color: #fff;
+    border: 2px solid #27ae60;
+    border-radius: 12px;
+    color: #27ae60;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.uncomplete-btn:hover {
+    background-color: #f0faf4;
+}
+
 /* メンバー選択モーダル */
 .member-select-header {
     display: flex;
@@ -804,24 +825,10 @@ body {
 }
 
 /* 詳細モーダル内の完了済みタスクスタイル */
-.task-detail-title.completed-style input {
-    color: #7f8c8d;
-    text-decoration: line-through;
+.task-detail-title.completed-style {
+    opacity: 0.6;
 }
 
-.task-detail-title .task-checkbox {
-    cursor: default;
-    font-size: 14px;
-}
-
-.task-detail-title .task-checkbox.clickable {
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.task-detail-title .task-checkbox.clickable:hover {
-    transform: scale(1.1);
-}
 
 .detail-field.disabled {
     opacity: 0.6;
