@@ -182,7 +182,7 @@ class AuthController extends Controller
         // パスワード変更がある場合のバリデーション
         if ($request->filled('current_password') || $request->filled('password')) {
             $rules['current_password'] = ['required', 'current_password'];
-            $rules['password'] = ['required', 'string', 'min:8', 'confirmed'];
+            $rules['password'] = ['required', 'string', 'min:8', 'confirmed', 'different:current_password'];
         }
 
         // エラーメッセージ
@@ -192,6 +192,7 @@ class AuthController extends Controller
             'password.required' => '新しいパスワードを入力してください。',
             'password.min' => '新しいパスワードは:min文字以上で入力してください。',
             'password.confirmed' => 'パスワード確認が一致しません。',
+            'password.different' => '現在のパスワードと異なるものを入力してください',
             'name.required' => 'ユーザー名を入力してください。',
             'name.max' => 'ユーザー名は:max文字以内で入力してください。',
             'email.required' => 'メールアドレスを入力してください。',
