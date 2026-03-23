@@ -1204,6 +1204,15 @@ async function createNewTask() {
  * 新規タスクを作成（音声入力）
  */
 async function voiceCreateTask(transcript) {
+    const recordingBar = document.getElementById("recordingBar");
+    const recordingBarLabel = document.getElementById("recordingBarLabel");
+    const bottomNav = document.querySelector(".bottom-nav");
+
+    // 解析中UIに切り替え
+    recordingBar.classList.add("active", "analyzing");
+    recordingBarLabel.textContent = "解析中...";
+    bottomNav.style.pointerEvents = "none";
+
     try {
         // AI解析APIにリクエストを送信
         const analyzeResponse = await fetch("/api/tasks/analyze", {
@@ -1261,6 +1270,11 @@ async function voiceCreateTask(transcript) {
         await filterTasks(currentFilter);
     } catch (error) {
         alert("エラー: " + error.message);
+    } finally {
+        // UIを元に戻す
+        recordingBar.classList.remove("active", "analyzing");
+        recordingBarLabel.textContent = "";
+        bottomNav.style.pointerEvents = "";
     }
 }
 
@@ -2454,7 +2468,9 @@ function updateSearchFilterBtnState() {
 // ----------------------------------------------------------------
 (function initVoiceInput() {
     const btn = document.getElementById("taskVoiceInputBtn");
-    if (!btn) return;
+    const recordingBar = document.getElementById("recordingBar");
+    const stopBtn = document.getElementById("recordingBarStopBtn");
+    if (!btn || !recordingBar || !stopBtn) return;
 
     // Web Speech API 非対応ブラウザはボタンを非表示にする
     const SpeechRecognition =
@@ -2466,33 +2482,42 @@ function updateSearchFilterBtnState() {
 
     const recognition = new SpeechRecognition();
     recognition.lang = "ja-JP";
-    recognition.interimResults = false; // 確定したテキストのみ取得
+    recognition.interimResults = false;
+    recognition.continuous = true; // 無音でも自動停止しない
 
-    // 録音開始
+    let transcript = "";
+
+    // マイクボタン：録音開始
     btn.addEventListener("click", () => {
-        if (btn.classList.contains("recording")) {
-            recognition.stop();
-            return;
-        }
+        transcript = "";
         recognition.start();
     });
 
-    // 録音開始時：ボタンをマイクON状態に変える
+    // 停止ボタン：録音停止
+    stopBtn.addEventListener("click", () => {
+        recognition.stop();
+    });
+
+    // 録音開始時：録音バーを表示
     recognition.onstart = () => {
-        btn.classList.add("recording");
-        btn.title = "クリックで停止";
+        recordingBar.classList.add("active");
     };
 
-    // 音声認識結果を入力欄にセットしてAI解析へ
+    // 音声認識結果：文字起こしを貯める
     recognition.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        voiceCreateTask(transcript);
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) {
+                transcript += e.results[i][0].transcript;
+            }
+        }
     };
 
-    // 録音終了時：ボタンを通常状態に戻す
+    // 録音終了時：録音バーを非表示にして保存
     recognition.onend = () => {
-        btn.classList.remove("recording");
-        btn.title = "音声入力";
+        recordingBar.classList.remove("active");
+        if (transcript) {
+            voiceCreateTask(transcript);
+        }
     };
 
     // エラー処理
