@@ -1132,11 +1132,9 @@ function setModalLocked(locked) {
 }
 
 /**
- * 新規タスクを作成
- * - useAI=true: ユーザー入力をAI解析してからマージ・保存（音声入力等で使用予定）
- * - useAI=false: ユーザーの手動入力をそのまま保存（通常フロー）
+ * 新規タスクを作成（手入力）
  */
-async function createNewTask(useAI = false) {
+async function createNewTask() {
     // handleSaveTask();
 
     // 入力チェック
@@ -1149,73 +1147,21 @@ async function createNewTask(useAI = false) {
     // 保存中はモーダル操作をロックし、ボタン表示を変更
     setModalLocked(true);
     const saveBtn = document.getElementById("saveTaskBtn");
-    saveBtn.textContent = useAI ? "解析中..." : "保存中...";
+    saveBtn.textContent = "保存中...";
 
     try {
-        // currentTaskに手動入力をセット
-        currentTask.textInput = textInput;
-        currentTask.aiTask = textInput;
-        currentTask.date = "指定なし";
-        currentTask.assignee = "指定なし";
-        currentTask.priority = "指定なし";
-
-        if (useAI) {
-            // AI解析APIにリクエストを送信
-            const response = await fetch("/api/tasks/analyze", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": csrfToken,
-                    Accept: "application/json",
-                },
-                body: JSON.stringify({
-                    text_input: textInput,
-                }),
-            });
-
-            // AI解析APIのレスポンス(JSON)を取得
-            // 例: { success: true, message: "...", data: {...} }
-            const result = await response.json();
-
-            if (!result.success) {
-                alert("エラー: " + (result.message || "AI解析に失敗しました"));
-                return;
-            }
-
-            // APIレスポンスの data 部分だけを取り出す(dataにAIが解析したタスク情報が入っている)
-            // 例: { aiTask: "...", date: "...", assignee: "...", priority: "..." }
-            const parsedTask = result.data;
-
-            // AI解析結果をcurrentTaskに反映
-            currentTask.textInput = textInput;
-            currentTask.aiTask = parsedTask.aiTask || textInput;
-            currentTask.date = parsedTask.date || "指定なし";
-            currentTask.assignee = parsedTask.assignee || "指定なし";
-            currentTask.priority = parsedTask.priority || "指定なし";
-        }
-
-        // 画面（DOM）の値で currentTask を上書き
-        // 日付・担当者・優先度はユーザーが画面で選んだ値が正
-        // ※ 画面と currentTask は別管理のため保存直前に同期が必要
         const detailDateElement = document.getElementById("detailDate");
-        const manualDate =
-            detailDateElement.dataset.date || detailDateElement.textContent;
-        const manualTime = detailDateElement.dataset.time || null;
-
-        currentTask.date = manualDate || "指定なし";
-        // 日付なしの場合は時間も無効にする
-        currentTask.time =
-            currentTask.date && currentTask.date !== "指定なし"
-                ? manualTime
-                : null;
-
-        const manualAssignee =
-            document.getElementById("detailAssignee").textContent;
-        currentTask.assignee = manualAssignee || "指定なし";
-
-        const manualPriority = document.querySelector(".priority-btn.active")
-            ?.dataset.priority;
-        currentTask.priority = manualPriority || "指定なし";
+        const date =
+            detailDateElement.dataset.date ||
+            detailDateElement.textContent ||
+            "指定なし";
+        const time =
+            date != "指定なし" ? detailDateElement.dataset.time || null : null;
+        const assignee =
+            document.getElementById("detailAssignee").textContent || "指定なし";
+        const priority =
+            document.querySelector(".priority-btn.active")?.dataset.priority ||
+            "指定なし";
 
         // 新規作成APIにリクエストを送信
         const saveResponse = await fetch("/api/tasks", {
@@ -1226,12 +1172,12 @@ async function createNewTask(useAI = false) {
                 Accept: "application/json",
             },
             body: JSON.stringify({
-                ai_task: currentTask.aiTask,
-                text_input: currentTask.textInput,
-                date: currentTask.date,
-                time: currentTask.time,
-                assignee: currentTask.assignee,
-                priority: currentTask.priority,
+                ai_task: textInput,
+                text_input: textInput,
+                date,
+                time,
+                assignee,
+                priority,
             }),
         });
 
@@ -1251,6 +1197,70 @@ async function createNewTask(useAI = false) {
     } finally {
         setModalLocked(false);
         saveBtn.textContent = "保存";
+    }
+}
+
+/**
+ * 新規タスクを作成（音声入力）
+ */
+async function voiceCreateTask(transcript) {
+    try {
+        // AI解析APIにリクエストを送信
+        const analyzeResponse = await fetch("/api/tasks/analyze", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+                Accept: "application/json",
+            },
+            body: JSON.stringify({
+                text_input: transcript,
+            }),
+        });
+
+        // { success: true, message: "...", data: {...} }
+        const analyzeResult = await analyzeResponse.json();
+
+        if (!analyzeResult.success) {
+            alert(
+                "エラー: " + (analyzeResult.message || "AI解析に失敗しました"),
+            );
+            return;
+        }
+
+        // { aiTask: "...", date: "...", assignee: "...", priority: "..." }
+        const parsedTask = analyzeResult.data;
+
+        // 新規作成APIにリクエストを送信
+        const saveResponse = await fetch("/api/tasks", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": csrfToken,
+                Accept: "application/json",
+            },
+            body: JSON.stringify({
+                ai_task: parsedTask.aiTask,
+                text_input: transcript,
+                date: parsedTask.date || "指定なし",
+                time: parsedTask.time != "指定なし" ? parsedTask.time : null,
+                assignee: parsedTask.assignee || "指定なし",
+                priority: parsedTask.priority || "指定なし",
+            }),
+        });
+
+        // 新規作成APIのレスポンス(JSON)を取得
+        const saveResult = await saveResponse.json();
+        // エラー
+        if (!saveResult.success) {
+            alert("作成に失敗しました: " + (saveResult.message || ""));
+            return;
+        }
+
+        closeModal("taskDetailModal");
+        await filterTasks(currentFilter);
+    } catch (error) {
+        alert("エラー: " + error.message);
     }
 }
 
@@ -1478,7 +1488,12 @@ function handleCheckboxClick(event, taskId) {
             "他メンバーのタスクです",
             `このタスクは<strong>${assigneeName}</strong>さんに割り当てられています。完了にしてもよろしいですか?`,
             "完了にする",
-            () => executeCompleteTaskWithAnimation(taskId, taskElement, checkboxElement),
+            () =>
+                executeCompleteTaskWithAnimation(
+                    taskId,
+                    taskElement,
+                    checkboxElement,
+                ),
             "fas fa-user",
         );
         return;
@@ -1577,7 +1592,11 @@ async function completeTask() {
  * リスト画面のチェックボックスクリック時に使用
  * @param {number} taskId - タスクID
  */
-async function executeCompleteTaskWithAnimation(taskId, taskElement, checkboxElement) {
+async function executeCompleteTaskWithAnimation(
+    taskId,
+    taskElement,
+    checkboxElement,
+) {
     if (!currentTask) return;
 
     if (!taskElement || !checkboxElement) return;
@@ -1885,7 +1904,7 @@ function renderTaskItem(task, isCompleted = false, groupType = null) {
                 }
                 <div class="task-meta-item">
                     <i class="far fa-user"></i>
-                    <span>${task.assignee === "指定なし" ? "指定なし" : (task.createdBy && task.createdBy !== task.assignee ? `${task.createdBy}→${task.assignee}` : task.assignee)}</span>
+                    <span>${task.assignee === "指定なし" ? "指定なし" : task.createdBy && task.createdBy !== task.assignee ? `${task.createdBy}→${task.assignee}` : task.assignee}</span>
                 </div>
                 <div class="task-meta-item ${getPriorityClass(task.priority)}">
                     <i class="fas fa-flag"></i>
@@ -2429,3 +2448,60 @@ function updateSearchFilterBtnState() {
         .getElementById("searchFilterToggleBtn")
         .classList.toggle("has-filter", hasFilter);
 }
+
+// ----------------------------------------------------------------
+// 音声入力（Web Speech API）
+// ----------------------------------------------------------------
+(function initVoiceInput() {
+    const btn = document.getElementById("taskVoiceInputBtn");
+    if (!btn) return;
+
+    // Web Speech API 非対応ブラウザはボタンを非表示にする
+    const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        btn.style.display = "none";
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ja-JP";
+    recognition.interimResults = false; // 確定したテキストのみ取得
+
+    // 録音開始
+    btn.addEventListener("click", () => {
+        if (btn.classList.contains("recording")) {
+            recognition.stop();
+            return;
+        }
+        recognition.start();
+    });
+
+    // 録音開始時：ボタンをマイクON状態に変える
+    recognition.onstart = () => {
+        btn.classList.add("recording");
+        btn.title = "クリックで停止";
+    };
+
+    // 音声認識結果を入力欄にセットしてAI解析へ
+    recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        voiceCreateTask(transcript);
+    };
+
+    // 録音終了時：ボタンを通常状態に戻す
+    recognition.onend = () => {
+        btn.classList.remove("recording");
+        btn.title = "音声入力";
+    };
+
+    // エラー処理
+    recognition.onerror = (e) => {
+        console.error("音声認識エラー:", e.error);
+        if (e.error === "not-allowed") {
+            alert(
+                "マイクの使用が許可されていません。ブラウザの設定を確認してください。",
+            );
+        }
+    };
+})();
