@@ -197,8 +197,8 @@ body {
     color: #e74c3c;
 }
 
-/* 音声入力ボタン */
-.voice-input-btn {
+/* 右下フローティング追加ボタン */
+.floating-add-btn {
     position: fixed;
     bottom: 100px;
     right: 20px;
@@ -218,7 +218,7 @@ body {
     z-index: 100;
 }
 
-.voice-input-btn:hover {
+.floating-add-btn:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(231, 76, 60, 0.5);
 }
@@ -420,8 +420,15 @@ body {
     color: #2c3e50;
 }
 
+.text-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
 .detail-field-input {
-    width: 100%;
+    flex: 1;
     font-size: 16px;
     font-weight: 500;
     color: #2c3e50;
@@ -429,8 +436,38 @@ body {
     background: transparent;
     outline: none;
     padding: 0;
-    margin-top: 2px;
     font-family: inherit;
+}
+
+/* モーダル内マイクボタン */
+.modal-voice-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #e9ecef;
+    color: #495057;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.modal-voice-btn:hover {
+    background: #dee2e6;
+}
+
+.modal-voice-btn.recording {
+    background: #e74c3c;
+    color: #fff;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
 }
 
 .task-detail-title.detail-field {

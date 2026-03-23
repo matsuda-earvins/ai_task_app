@@ -121,8 +121,8 @@
             @endif
         </div>
 
-        <!-- 音声入力ボタン -->
-        <button class="voice-input-btn" id="voiceInputBtn">
+        <!-- 新規タスク追加ボタン -->
+        <button class="floating-add-btn" id="voiceInputBtn">
             <i class="fas fa-plus"></i>
         </button>
 
@@ -172,7 +172,12 @@
                         <i class="fas fa-clipboard"></i>
                         <span>タスク</span>
                     </div>
-                    <input type="text" id="textInputField" class="detail-field-input" value="" placeholder="タスクを入力してください" />
+                    <div class="text-input-wrapper">
+                        <input type="text" id="textInputField" class="detail-field-input" value="" placeholder="タスクを入力してください" />
+                        <button type="button" id="taskVoiceInputBtn" class="modal-voice-btn" title="音声入力">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="detail-field" id="dateField">
