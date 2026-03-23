@@ -1275,6 +1275,8 @@ async function voiceCreateTask(transcript) {
         recordingBar.classList.remove("active", "analyzing");
         recordingBarLabel.textContent = "";
         bottomNav.style.pointerEvents = "";
+        const voiceBtn = document.getElementById("voiceInputBtn");
+        if (voiceBtn) voiceBtn.disabled = false;
     }
 }
 
@@ -2467,7 +2469,7 @@ function updateSearchFilterBtnState() {
 // 音声入力（Web Speech API）
 // ----------------------------------------------------------------
 (function initVoiceInput() {
-    const voiceInputBtn = document.getElementById("voiceInputBtn");
+    const voiceBtn = document.getElementById("voiceInputBtn");
     const recordingBar = document.getElementById("recordingBar");
     const stopBtn = document.getElementById("recordingBarStopBtn");
     if (!recordingBar || !stopBtn) return;
@@ -2476,7 +2478,7 @@ function updateSearchFilterBtnState() {
     const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        if (voiceInputBtn) voiceInputBtn.style.display = "none";
+        if (voiceBtn) voiceBtn.style.display = "none";
         return;
     }
 
@@ -2488,8 +2490,8 @@ function updateSearchFilterBtnState() {
     let transcript = "";
 
     // 音声入力ボタン：録音開始
-    if (voiceInputBtn) {
-        voiceInputBtn.addEventListener("click", () => {
+    if (voiceBtn) {
+        voiceBtn.addEventListener("click", () => {
             transcript = "";
             recognition.start();
         });
@@ -2500,9 +2502,10 @@ function updateSearchFilterBtnState() {
         recognition.stop();
     });
 
-    // 録音開始時：録音バーを表示
+    // 録音開始時：録音バーを表示・ボタンを無効化
     recognition.onstart = () => {
         recordingBar.classList.add("active");
+        if (voiceBtn) voiceBtn.disabled = true;
     };
 
     // 音声認識結果：文字起こしを貯める
@@ -2515,10 +2518,14 @@ function updateSearchFilterBtnState() {
     };
 
     // 録音終了時：録音バーを非表示にして保存
+    // ボタンの再有効化は voiceCreateTask の finally で行う（解析完了まで無効のまま）
     recognition.onend = () => {
         recordingBar.classList.remove("active");
         if (transcript) {
             voiceCreateTask(transcript);
+        } else {
+            // 何も喋らなかった場合はここでボタンを戻す
+            if (voiceBtn) voiceBtn.disabled = false;
         }
     };
 
