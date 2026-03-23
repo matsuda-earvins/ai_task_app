@@ -588,9 +588,9 @@ document.addEventListener("DOMContentLoaded", () => {
  * 全てのUIコンポーネントにイベントリスナーを設定
  */
 function setupEventListeners() {
-    const voiceInputBtn = document.getElementById("voiceInputBtn");
-    if (voiceInputBtn) {
-        voiceInputBtn.addEventListener("click", () => {
+    const textInputBtn = document.getElementById("textInputBtn");
+    if (textInputBtn) {
+        textInputBtn.addEventListener("click", () => {
             openNewTaskModal();
         });
     }
@@ -2467,8 +2467,7 @@ function updateSearchFilterBtnState() {
 // 音声入力（Web Speech API）
 // ----------------------------------------------------------------
 (function initVoiceInput() {
-    const btn = document.getElementById("taskVoiceInputBtn");
-    const floatingVoiceBtn = document.getElementById("floatingVoiceBtn");
+    const voiceInputBtn = document.getElementById("voiceInputBtn");
     const recordingBar = document.getElementById("recordingBar");
     const stopBtn = document.getElementById("recordingBarStopBtn");
     if (!recordingBar || !stopBtn) return;
@@ -2477,7 +2476,7 @@ function updateSearchFilterBtnState() {
     const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        btn.style.display = "none";
+        if (voiceInputBtn) voiceInputBtn.style.display = "none";
         return;
     }
 
@@ -2488,13 +2487,13 @@ function updateSearchFilterBtnState() {
 
     let transcript = "";
 
-    // モーダル内マイクボタン・フローティング音声ボタン：録音開始
-    [btn, floatingVoiceBtn].filter(Boolean).forEach((el) => {
-        el.addEventListener("click", () => {
+    // 音声入力ボタン：録音開始
+    if (voiceInputBtn) {
+        voiceInputBtn.addEventListener("click", () => {
             transcript = "";
             recognition.start();
         });
-    });
+    }
 
     // 停止ボタン：録音停止
     stopBtn.addEventListener("click", () => {
