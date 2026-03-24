@@ -14,6 +14,9 @@ Route::middleware(['web', 'auth'])->group(function () {
     // AI解析
     Route::post('/tasks/analyze', [TaskController::class, 'analyzeTask']);
 
+    // Whisper文字起こし
+    Route::post('/tasks/transcribe', [TaskController::class, 'transcribeAudio']);
+
     // 新規作成
     Route::post('/tasks', [TaskController::class, 'createNewTask']);
 

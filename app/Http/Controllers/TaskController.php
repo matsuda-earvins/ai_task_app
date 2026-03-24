@@ -162,6 +162,49 @@ class TaskController extends Controller
         return view('tasks.index', compact('tasks', 'filter', 'currentUser', 'users'));
     }
 
+    // Whisper文字起こし : POST /api/tasks/transcribe
+    public function transcribeAudio(Request $request)
+    {
+        $request->validate([
+            'audio' => 'required|file|mimes:webm,mp4,m4a,wav,ogg|max:25600',
+        ]);
+
+        $file = $request->file('audio');
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
+            ])->timeout(30)->attach(
+                'file',
+                file_get_contents($file->getRealPath()),
+                'audio.' . $file->getClientOriginalExtension()
+            )->post('https://api.openai.com/v1/audio/transcriptions', [
+                'model' => 'whisper-1',
+                'language' => 'ja',
+            ]);
+
+            if ($response->failed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Whisper APIへのリクエストが失敗しました',
+                    'error' => $response->json(),
+                ], 500);
+            }
+
+            $transcript = $response->json('text');
+
+            return response()->json([
+                'success' => true,
+                'transcript' => $transcript,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     // AI解析 : POST /api/tasks/analyze
     public function analyzeTask(Request $request)
     {
