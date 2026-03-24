@@ -2027,19 +2027,21 @@ function applyMemberInMemberSelectModal() {
 
 /**
  * 日付選択モーダルを開く
- * 初期表示は既存の日付があればその日付、なければ今日
+ * 初期表示は「既存の期限日」→「今日」→「未選択」の優先順で決定
  */
 function openDateSelectModal() {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const existingDueDate = currentTask.dueDate
         ? new Date(currentTask.dueDate)
         : null;
-    selectedDate = existingDueDate || today;
-    currentYear = selectedDate.getFullYear();
-    currentMonth = selectedDate.getMonth();
-
     const detailDate = document.getElementById("detailDate");
+    const hasDate = detailDate?.dataset.date !== "";
+    selectedDate = existingDueDate || (hasDate ? today : null);
+    currentYear = (selectedDate || today).getFullYear();
+    currentMonth = (selectedDate || today).getMonth();
+
     const existingTime = detailDate?.dataset.time || null;
 
     initializeTimePicker();
