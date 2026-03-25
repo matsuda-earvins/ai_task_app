@@ -12,44 +12,49 @@ class DevSeeder extends Seeder
 {
     public function run(): void
     {
-        // 固定ユーザー7人（UI検証用：フルネーム4人・苗字のみ3人）
+        // 固定ユーザー8人（UI検証用：スペースあり/なし × 4・5・6文字 + 苗字のみ）
         $user1 = User::factory()->create([
-            'name'     => '山田太郎',      // 4文字
+            'name'     => '山田 太郎',      // 4文字・スペースあり
             'email'    => 'test1@test.com',
             'password' => Hash::make('password'),
         ]);
         $user2 = User::factory()->create([
-            'name'     => '鈴木花子',      // 4文字
+            'name'     => '半角無男',       // 4文字・スペースなし
             'email'    => 'test2@test.com',
             'password' => Hash::make('password'),
         ]);
         $user3 = User::factory()->create([
-            'name'     => '中村健太郎',    // 5文字
+            'name'     => '中村 健太郎',    // 5文字・スペースあり
             'email'    => 'test3@test.com',
             'password' => Hash::make('password'),
         ]);
         $user4 = User::factory()->create([
-            'name'     => '佐々木美由紀',  // 6文字
+            'name'     => '渡辺健太郎',     // 5文字・スペースなし
             'email'    => 'test4@test.com',
             'password' => Hash::make('password'),
         ]);
         $user5 = User::factory()->create([
-            'name'     => '小林',
+            'name'     => '佐々木 美由紀',  // 6文字・スペースあり
             'email'    => 'test5@test.com',
             'password' => Hash::make('password'),
         ]);
         $user6 = User::factory()->create([
-            'name'     => '加藤',
+            'name'     => '東海林美由紀',   // 6文字・スペースなし
             'email'    => 'test6@test.com',
             'password' => Hash::make('password'),
         ]);
         $user7 = User::factory()->create([
-            'name'     => '吉田',
+            'name'     => '小林',
             'email'    => 'test7@test.com',
             'password' => Hash::make('password'),
         ]);
+        $user8 = User::factory()->create([
+            'name'     => '加藤',
+            'email'    => 'test8@test.com',
+            'password' => Hash::make('password'),
+        ]);
 
-        $users = collect([$user1, $user2, $user3, $user4, $user5, $user6, $user7]);
+        $users = collect([$user1, $user2, $user3, $user4, $user5, $user6, $user7, $user8]);
 
         $highPriority   = Priority::where('code', 'high')->first()?->id;
         $mediumPriority = Priority::where('code', 'medium')->first()?->id;
