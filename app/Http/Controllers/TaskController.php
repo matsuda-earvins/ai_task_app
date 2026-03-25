@@ -172,16 +172,17 @@ class TaskController extends Controller
         $file = $request->file('audio');
 
         try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
-            ])->timeout(30)->attach(
-                'file',
-                file_get_contents($file->getRealPath()),
-                'audio.' . $file->getClientOriginalExtension()
-            )->post('https://api.openai.com/v1/audio/transcriptions', [
-                'model' => 'whisper-1',
-                'language' => 'ja',
-            ]);
+            $response = Http::withOptions(['verify' => false])
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
+                ])->timeout(30)->attach(
+                    'file',
+                    file_get_contents($file->getRealPath()),
+                    'audio.' . $file->getClientOriginalExtension()
+                )->post('https://api.openai.com/v1/audio/transcriptions', [
+                    'model' => 'whisper-1',
+                    'language' => 'ja',
+                ]);
 
             if ($response->failed()) {
                 return response()->json([
@@ -284,25 +285,26 @@ class TaskController extends Controller
         // 処理
         try {
             // OpenAI APIを呼び出し
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
-                'Content-Type' => 'application/json',
-            ])->timeout(30)->post('https://api.openai.com/v1/chat/completions', [
-                'model' => 'gpt-5',
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => $systemPrompt,
+            $response = Http::withOptions(['verify' => false])
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
+                    'Content-Type' => 'application/json',
+                ])->timeout(30)->post('https://api.openai.com/v1/chat/completions', [
+                    'model' => 'gpt-5',
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => $systemPrompt,
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $textInput,
+                        ],
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => $textInput,
+                    'response_format' => [
+                        'type' => 'json_object',
                     ],
-                ],
-                'response_format' => [
-                    'type' => 'json_object',
-                ],
-            ]);
+                ]);
 
             // HTTPステータスが4xx / 5xx の場合はエラーを返す
             if ($response->failed()) {
