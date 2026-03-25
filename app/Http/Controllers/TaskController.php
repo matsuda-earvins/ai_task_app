@@ -172,13 +172,7 @@ class TaskController extends Controller
         $file = $request->file('audio');
 
         try {
-            $response = Http::withOptions([
-                'verify' => false,
-                'curl' => [
-                    CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1,
-                ]
-            ])
-                ->withHeaders([
+            $response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
                 ])->timeout(30)->attach(
                     'file',
@@ -290,12 +284,7 @@ class TaskController extends Controller
         // 処理
         try {
             // OpenAI APIを呼び出し
-            $response = Http::withOptions([
-                'verify' => false,
-                'curl' => [
-                    CURLOPT_SSLVERSION => CURL_SSLVERSION_TLSv1,
-                ]
-            ])->withHeaders([
+            $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . env('OPENAI_API_KEY'),
                 'Content-Type' => 'application/json',
             ])->timeout(30)->post('https://api.openai.com/v1/chat/completions', [
