@@ -20,7 +20,12 @@ class DatabaseSeeder extends Seeder
         // （Laravel が内部でインスタンスを生成し、run() を呼び出す）
         $this->call([
             PrioritySeeder::class,  // 優先度マスターデータ（必須）
-            DevSeeder::class,       // 開発用テストデータ
         ]);
+
+        if (app()->environment('local')) {
+            $this->call([
+                DevSeeder::class,
+            ]);
+        }
     }
 }
