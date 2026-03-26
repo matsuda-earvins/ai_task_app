@@ -29,6 +29,9 @@ let currentFilter = "self";
  */
 let currentTask = null;
 
+/** タスク詳細モーダルを開いた時点のタスクのスナップショット（変更検知・元の担当者判定に使用） */
+let snapshotTask = null;
+
 /**
  * メンバー選択モーダルで現在選択されているメンバーID
  * @type {number|null}
@@ -910,26 +913,6 @@ function isOtherMemberTask(task) {
 }
 
 /**
- * タスクの内容が変更されたかどうかを判定
- * @returns {boolean} 変更がある場合true
- */
-function hasTaskChanged() {
-    const textInput = document.getElementById("textInputField").value.trim();
-    const assignee = document.getElementById("detailAssignee").textContent;
-    const date = document.getElementById("detailDate").textContent;
-    const priority =
-        document.querySelector(".priority-btn.active")?.dataset.priority ||
-        "指定なし";
-
-    return (
-        textInput !== currentTask.textInput ||
-        assignee !== currentTask.assignee ||
-        date !== currentTask.date ||
-        priority !== currentTask.priority
-    );
-}
-
-/**
  * 新規タスク作成モーダルを開く
  * 初期値として現在のユーザーを担当者に設定
  */
@@ -981,6 +964,9 @@ function openTaskDetailModal(taskId) {
     if (!task) return;
     currentTask = task;
 
+    // モーダルを開いた時点のスナップショットを保持
+    snapshotTask = { ...currentTask };
+
     // 画面表示（編集）
     document.getElementById("textInputField").value = task.aiTask;
 
@@ -990,8 +976,7 @@ function openTaskDetailModal(taskId) {
     detailDate.dataset.date = task.dueDate || "";
     detailDate.dataset.time = task.time || "";
 
-    document.getElementById("detailAssignee").textContent =
-        task.assignee === CURRENT_USER ? CURRENT_USER : task.assignee;
+    document.getElementById("detailAssignee").textContent = task.assignee;
 
     document.querySelectorAll(".priority-btn").forEach((btn) => {
         btn.classList.remove("active", "high", "medium", "low");
@@ -1312,15 +1297,26 @@ async function voiceCreateTask(transcript, skipUiSetup = false) {
 function confirmEditTask() {
     // currentTask.id の存在チェックは handleSaveTask() で済んでいる
 
-    // 変更がない場合
-    if (!hasTaskChanged()) {
+    // 変更がない場合はモーダルを閉じるだけ
+    const textInput = document.getElementById("textInputField").value.trim();
+    const date = document.getElementById("detailDate").textContent;
+    const priority =
+        document.querySelector(".priority-btn.active")?.dataset.priority ||
+        "指定なし";
+
+    if (
+        textInput === snapshotTask.textInput &&
+        currentTask.assignee === snapshotTask.assignee &&
+        date === snapshotTask.date &&
+        priority === snapshotTask.priority
+    ) {
         closeModal("taskDetailModal");
         return;
     }
 
     // 他メンバーのタスク
-    if (isOtherMemberTask(currentTask)) {
-        const assigneeName = currentTask.assignee;
+    if (isOtherMemberTask(snapshotTask)) {
+        const assigneeName = snapshotTask.assignee;
         showAlert(
             "他メンバーのタスクです",
             `<strong>${assigneeName}</strong>さんに割り当てられています<br>編集してもよろしいですか?`,
@@ -1332,7 +1328,7 @@ function confirmEditTask() {
     }
 
     // 担当者なしのタスク
-    if (currentTask.assignee === "指定なし") {
+    if (snapshotTask.assignee === "指定なし") {
         showAlert(
             "担当者なしのタスクです",
             "担当者が指定されていません<br>編集してもよろしいですか?",
