@@ -38,11 +38,8 @@ class TaskController extends Controller
 
             // 担当者が未割当のタスク
             case 'unassigned':
-                $query->where(function ($q) {
-                    $q->whereNull('assignee_id')
-                        ->orWhereNull('priority_id')
-                        ->orWhereNull('due_date');
-                })->whereNull('completed_at')
+                $query->whereNull('assignee_id')
+                    ->whereNull('completed_at')
                     ->orderBy('created_at', 'desc');
                 break;
 
