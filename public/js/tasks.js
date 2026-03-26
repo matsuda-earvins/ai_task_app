@@ -679,7 +679,7 @@ function setupEventListeners() {
 
     const deleteTaskBtn = document.getElementById("deleteTaskBtn");
     if (deleteTaskBtn) {
-        deleteTaskBtn.addEventListener("click", deleteTask);
+        deleteTaskBtn.addEventListener("click", confirmDeleteTask);
     }
 
     document.querySelectorAll(".filter-tab").forEach((tab) => {
@@ -894,7 +894,7 @@ async function handleSaveTask() {
     }
 
     if (currentTask.id) {
-        await editTask();
+        await confirmEditTask();
     } else {
         await textCreateTask();
     }
@@ -1290,9 +1290,7 @@ async function voiceCreateTask(transcript, skipUiSetup = false) {
  * 1. ユーザーの手動入力を取得
  * 2. データベースに保存
  */
-async function editTask() {
-    // currentTask.id の存在チェックは handleSaveTask() で済んでいる
-
+async function executeEditTask() {
     // 入力チェック
     const textInput = document.getElementById("textInputField").value.trim();
     if (!textInput) {
@@ -1411,7 +1409,7 @@ async function editTask() {
  * タスク削除の確認ダイアログを表示
  * 他メンバーのタスクの場合は専用のアラートモーダルを表示
  */
-function deleteTask() {
+function confirmDeleteTask() {
     if (!currentTask) return;
 
     // 他メンバーのタスクの場合は確認アラートを表示
@@ -1925,7 +1923,7 @@ function renderTaskItem(task, isCompleted = false, groupType = null) {
                 }
                 <div class="task-meta-item">
                     <i class="far fa-user"></i>
-                    <span>${task.assignee === "指定なし" ? "指定なし" : task.createdBy && task.createdBy !== task.assignee ? `${task.createdBy}→${task.assignee}` : task.assignee}</span>
+                    <span>${task.assignee === "指定なし" ? "指定なし" : task.createdBy && task.createdBy !== task.assignee ? `${task.createdBy} → ${task.assignee}` : task.assignee}</span>
                 </div>
                 <div class="task-meta-item ${getPriorityClass(task.priority)}">
                     <i class="fas fa-flag"></i>

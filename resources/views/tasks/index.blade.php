@@ -72,7 +72,7 @@
                 {{-- $tasks（コレクション）から1件ずつ $task として取り出す --}}
                 @foreach ($tasks as $task)
                     {{-- 1つのタスク全体のコンテナクリックすると editTask(タスクID) をJSに渡す --}}
-                    <div class="task-item" onclick="editTask({{ $task->id }})">
+                    <div class="task-item" onclick="openTaskDetailModal({{ $task->id }})">
                         <div class="task-item-top">
                             {{-- 優先度があればclass="priority-優先度名" を追加（例: priority-high） --}}
                             <div class="task-checkbox priority-{{ $task->priority->code ?? 'none' }}">
