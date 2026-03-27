@@ -1,3 +1,4 @@
+@use(Illuminate\Support\Facades\Storage)
 @extends('layouts.app')
 
 @section('title', 'アカウント設定')
@@ -15,7 +16,9 @@
             </div>
 
             <!-- フォーム -->
-            <form method="POST" action="#" class="auth-form account-form">
+            <form method="POST" action="{{ route('account.update') }}" class="auth-form account-form"
+                enctype="multipart/form-data">
+
                 @csrf
 
                 <!-- 成功メッセージ -->
@@ -41,6 +44,25 @@
                 <!-- セクション: 基本情報 -->
                 <div class="account-section">
                     <h2 class="account-section-title">基本情報</h2>
+
+                    <!-- プロフィール画像 -->
+                    <div class="auth-field">
+                        <label class="auth-label">
+                            <i class="fas fa-camera"></i>
+                            <span>プロフィール画像</span>
+                        </label>
+                        <div class="avatar-preview-wrapper">
+                            @if (Auth::user()->avatar)
+                                <img src="{{ Storage::url(Auth::user()->avatar) }}" class="avatar-preview" alt="プロフィール画像">
+                            @else
+                                <div class="avatar-preview avatar-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            @endif
+                        </div>
+                        <input type="file" id="avatar" name="avatar" class="auth-input"
+                            accept="image/jpeg,image/png,image/gif">
+                    </div>
 
                     <!-- ユーザー名 -->
                     <div class="auth-field">
