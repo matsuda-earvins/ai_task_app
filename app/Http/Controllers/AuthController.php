@@ -17,6 +17,7 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+
     // ログイン処理を行うメソッド
     public function login(Request $request)
     {
@@ -73,6 +74,7 @@ class AuthController extends Controller
         return view('auth.register');
     }
 
+
     // 新規登録処理を行うメソッド
     public function register(Request $request)
     {
@@ -117,6 +119,8 @@ class AuthController extends Controller
     {
         return view('auth.forgot-password');
     }
+
+
     // パスワードリセットメール送信
     public function sendResetLinkEmail(Request $request)
     {
@@ -131,6 +135,8 @@ class AuthController extends Controller
             ? back()->with(['status' => 'パスワードリセット用のリンクをメールで送信しました。'])
             : back()->withErrors(['email' => 'このメールアドレスは登録されていません。']);
     }
+
+
     // パスワードリセット画面表示
     public function showResetPasswordForm(Request $request, string $token)
     {
@@ -139,6 +145,8 @@ class AuthController extends Controller
             'email' => $request->email
         ]);
     }
+
+
     // パスワードリセット処理
     public function resetPassword(Request $request)
     {
@@ -169,6 +177,7 @@ class AuthController extends Controller
     {
         return view('auth.account');
     }
+
 
     // アカウント情報更新処理　
     public function updateAccount(Request $request)
@@ -222,7 +231,8 @@ class AuthController extends Controller
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+            $extension = $request->file('avatar')->getClientOriginalExtension();
+            $user->avatar = $request->file('avatar')->storeAs('avatars', $user->id . "." . $extension, 'public');
         }
 
         /** @var \App\Models\User $user */
@@ -230,5 +240,23 @@ class AuthController extends Controller
 
         // セッションにメッセージを保存（次の1リクエストだけ使える)
         return back()->with('status', 'アカウント情報を更新しました。');
+    }
+
+
+    // プロフィール画像削除処理
+    public function deleteAvatar()
+    {
+        $user = Auth::user();
+
+        if ($user->avatar) {
+            // storage/app/public/avatars/ から画像ファイル本体を削除
+            Storage::disk('public')->delete($user->avatar);
+            $user->avatar = null;
+
+            /** @var \App\Models\User $user */
+            $user->save();
+        }
+
+        return response()->json(['message' => 'プロフィール画像を削除しました。']);
     }
 }
