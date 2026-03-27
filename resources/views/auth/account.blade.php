@@ -52,16 +52,28 @@
                             <span>プロフィール画像</span>
                         </label>
                         <div class="avatar-preview-wrapper">
-                            @if (Auth::user()->avatar)
-                                <img src="{{ Storage::url(Auth::user()->avatar) }}" class="avatar-preview" alt="プロフィール画像">
-                            @else
-                                <div class="avatar-preview avatar-placeholder">
-                                    <i class="fas fa-user"></i>
+                            <div class="avatar-upload-area" onclick="document.getElementById('avatar').click()">
+                                @if (Auth::user()->avatar)
+                                    <img src="{{ Storage::url(Auth::user()->avatar) }}" class="avatar-preview"
+                                        alt="プロフィール画像">
+                                @else
+                                    <div class="avatar-preview avatar-placeholder">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                @endif
+                                <div class="avatar-camera-icon">
+                                    <i class="fas fa-camera"></i>
                                 </div>
+                            </div>
+                            @if (Auth::user()->avatar)
+                                <button type="button" class="avatar-delete-btn" onclick="deleteAvatar()">
+                                    <i class="fas fa-trash"></i>
+                                    <span>画像を削除</span>
+                                </button>
                             @endif
                         </div>
                         <input type="file" id="avatar" name="avatar" class="auth-input"
-                            accept="image/jpeg,image/png,image/gif">
+                            accept="image/jpeg,image/png,image/gif" style="display: none">
                     </div>
 
                     <!-- ユーザー名 -->
@@ -148,5 +160,8 @@
 @endsection
 
 @push('scripts')
+    <script>
+        window.AVATAR_DELETE_URL = '{{ route('account.avatar.delete') }}';
+    </script>
     <script src="{{ asset('js/auth.js') }}"></script>
 @endpush
